@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Crosshair on a 108dp adaptive-icon canvas (safe zone is the central 66dp). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:pathData="M54,36 A18,18 0 1,1 53.99,36 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="4"
+        android:pathData="M54,28 L54,44 M54,64 L54,80 M28,54 L44,54 M64,54 L80,54" />
+    <path
+        android:fillColor="#FF5252"
+        android:pathData="M54,50 A4,4 0 1,1 53.99,50 Z" />
+</vector>

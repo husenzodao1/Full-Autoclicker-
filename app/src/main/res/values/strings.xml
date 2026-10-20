@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Full Auto Clicker</string>
+    <string name="a11y_label">Full Auto Clicker</string>
+    <string name="a11y_summary">Volume Up = one tap at your chosen spot</string>
+    <string name="a11y_description">Turns each Volume Up press into exactly one tap at the point you choose with the floating marker.\n\nVolume Up is intercepted only while the clicker is ARMED, so it does not change the volume then. Volume Down is never intercepted. In every other state both volume keys work normally.\n\nThis service does not read screen content and collects no data. It has no internet access.</string>
+
+    <string name="tagline">One Volume Up press = one tap at your target.</string>
+
+    <string name="card_setup">1 · Accessibility access</string>
+    <string name="status_service_on">ON and running</string>
+    <string name="status_service_off">OFF: turn on Full Auto Clicker in Accessibility settings</string>
+    <string name="status_service_stuck">ON in settings but not running. Turn it off and on again.</string>
+    <string name="btn_enable">Open Accessibility settings</string>
+    <string name="btn_settings">Accessibility settings</string>
+    <string name="btn_app_info">App info</string>
+    <string name="setup_help">Samsung: Settings → Accessibility → Installed apps → Full Auto Clicker → On.\n\nIf the switch is greyed out or says \"Restricted setting\" (Android 13+ for apps not installed from a store): open App info → ⋮ (top right) → Allow restricted settings, then try again.\n\nRecommended: Settings → Battery → Background usage limits → Never sleeping apps → add Full Auto Clicker.</string>
+
+    <string name="card_control">2 · Control</string>
+    <string name="mode_unavailable">Turn on accessibility access first.</string>
+    <string name="mode_idle">IDLE: volume keys work normally.</string>
+    <string name="mode_selecting">SELECTING: drag the marker, then press READY.</string>
+    <string name="mode_armed">ARMED at %1$d, %2$d: each Volume Up press taps once.</string>
+    <string name="mode_paused">PAUSED: the screen rotated or resized since READY (target %1$d, %2$d). Volume Up works normally until you rotate back or set a new target.</string>
+    <string name="mode_last_stop">Last stop: %1$s</string>
+    <string name="btn_show">Show floating button</string>
+    <string name="btn_stop">STOP</string>
+    <string name="tap_length_label">Tap length</string>
+    <string name="tap_10">10 ms</string>
+    <string name="tap_20">20 ms</string>
+    <string name="tap_40">40 ms</string>
+    <string name="control_help">Tap the floating circle → START → drag the marker onto the spot → READY. The marker disappears and its position is kept. Each Volume Up press then taps there once; holding the key does not repeat. Volume Down always changes volume. STOP, screen off, or turning the service off disarms immediately; nothing re-arms by itself.</string>
+
+    <string name="card_test">3 · Test and latency</string>
+    <string name="btn_reset">Reset stats</string>
+
+    <string name="settings_unavailable">This settings screen is not available on this device.</string>
+</resources>

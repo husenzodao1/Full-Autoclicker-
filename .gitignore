@@ -1,0 +1,14 @@
+# Build output
+build/
+app/build/
+.gradle/
+.kotlin/
+local.properties
+*.iml
+.idea/
+captures/
+
+# Signing material must never be committed
+keystore.properties
+*.jks
+*.keystore
