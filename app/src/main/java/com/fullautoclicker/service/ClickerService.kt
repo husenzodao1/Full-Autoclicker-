@@ -359,6 +359,12 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
 
     override fun onCancelPressed() = engine.cancelSelection()
 
+    override fun currentSteps(): List<Step> = currentSequence?.steps.orEmpty()
+
+    override fun isChoosingSteps(): Boolean = engine.mode == Mode.SELECTING
+
+    override fun onTimingsEdited(steps: List<Step>) = updateTimings(steps)
+
     // ------------------------------------------------------------------ API for the app UI
 
     fun startSelection() {

@@ -52,6 +52,7 @@ sed "s#<manifest #<manifest package=\"$APP_ID\" #" "$APP/src/main/AndroidManifes
     --min-sdk-version "$MIN_SDK" --target-sdk-version "$TARGET_SDK" \
     --version-code "$VERSION_CODE" --version-name "$VERSION_NAME" \
     --java "$OUT/gen" --proguard "$OUT/aapt-rules.pro" \
+    -A "$APP/src/main/assets" \
     --auto-add-overlay "$OUT"/res/*.flat
 
 # 2. Code.

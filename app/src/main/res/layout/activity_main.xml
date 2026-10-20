@@ -11,28 +11,32 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingStart="18dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="24dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/exo2"
+            android:letterSpacing="-0.01"
             android:text="@string/app_name"
             android:textColor="@color/text"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:textFontWeight="800"
+            android:textSize="30sp" />
 
         <TextView
             style="@style/Body"
+            android:layout_marginTop="4dp"
             android:text="@string/tagline" />
 
         <Button
             android:id="@+id/btn_language"
-            style="?android:attr/borderlessButtonStyle"
+            style="@style/Btn.Chip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="-8dp"
-            android:textAllCaps="false"
-            android:textColor="@color/accent" />
+            android:layout_marginTop="12dp" />
 
         <!-- 1 · Accessibility access -->
         <LinearLayout style="@style/Card">
@@ -44,12 +48,13 @@
             <TextView
                 android:id="@+id/service_status"
                 style="@style/Body"
-                android:textStyle="bold" />
+                android:fontFamily="@font/onest"
+                android:textFontWeight="500" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <Button
@@ -61,6 +66,7 @@
 
                 <Button
                     android:id="@+id/btn_app_info"
+                    style="@style/Btn.Ghost"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -92,7 +98,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <Button
@@ -104,13 +110,12 @@
 
                 <Button
                     android:id="@+id/btn_stop"
+                    style="@style/Btn.Danger"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:backgroundTint="@color/danger"
                     android:minWidth="96dp"
-                    android:text="@string/btn_stop"
-                    android:textColor="#FFFFFF" />
+                    android:text="@string/btn_stop" />
             </LinearLayout>
 
 
@@ -243,22 +248,24 @@
             <TextView
                 android:id="@+id/latency_text"
                 style="@style/Body"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:fontFamily="monospace"
                 android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/pad_text"
                 style="@style/Body"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:fontFamily="monospace"
                 android:textSize="12sp" />
 
             <Button
                 android:id="@+id/btn_reset"
+                style="@style/Btn.Ghost"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
+                android:layout_marginTop="10dp"
                 android:text="@string/btn_reset" />
         </LinearLayout>
     </LinearLayout>

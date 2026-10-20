@@ -1,6 +1,8 @@
 package com.fullautoclicker.overlay
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.app.LocaleManager
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.PixelFormat
@@ -11,6 +13,7 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.os.Handler
+import android.os.LocaleList
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
@@ -20,7 +23,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import com.fullautoclicker.R
 import com.fullautoclicker.core.DisplayGeometry
@@ -55,15 +60,21 @@ class OverlayController(
         fun onHidePressed()
         fun onReadyPressed(steps: List<Step>)
         fun onCancelPressed()
+
+        /** Steps of the armed (or last saved) sequence, for the settings panel. */
+        fun currentSteps(): List<Step>
+        fun isChoosingSteps(): Boolean
+        fun onTimingsEdited(steps: List<Step>)
     }
 
     private val wm = context.getSystemService(WindowManager::class.java)
+    private val ui = Ui(context)
     private val handler = Handler(Looper.getMainLooper())
     private val density = context.resources.displayMetrics.density
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
     private val location = IntArray(2)
 
-    private val bubbleSize = px(48)
+    private val bubbleSize = px(46)
     private val bubble = BubbleView(context)
     private val bubbleParams = windowParams(bubbleSize, bubbleSize, "bubble")
     var isBubbleShowing = false
@@ -73,6 +84,8 @@ class OverlayController(
     private var menuStatus: TextView? = null
     private var menuHiddenAt = 0L
     val isMenuShowing: Boolean get() = menu != null
+
+    private var settings: View? = null
 
     // ---- step selection
     private sealed class Draft {
@@ -99,9 +112,9 @@ class OverlayController(
     private var drawView: DrawView? = null
     private var panel: LinearLayout? = null
     private var panelStatus: TextView? = null
-    private val panelAddButtons = ArrayList<TextView>()
-    private var panelReady: TextView? = null
-    private var panelUndo: TextView? = null
+    private val panelAddButtons = ArrayList<View>()
+    private var panelReady: View? = null
+    private var panelUndo: View? = null
     private var panelAtTop = true
     val isSelectionShowing: Boolean get() = selecting
 
@@ -138,6 +151,7 @@ class OverlayController(
     /** HIDE: removes the bubble and menu. The clicker's mode is not changed. */
     fun hideControls() {
         hideMenu()
+        hideSettings()
         if (isBubbleShowing) removeWindow(bubble)
         isBubbleShowing = false
     }
@@ -244,16 +258,29 @@ class OverlayController(
         if (isMenuShowing || !isBubbleShowing) return
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(0xF2202124.toInt(), px(14).toFloat())
-            setPadding(px(8), px(6), px(8), px(8))
+            gravity = Gravity.CENTER_HORIZONTAL
+            background = ui.glass(24f)
+            setPadding(px(10), px(10), px(10), px(8))
         }
-        val status = label(statusText, 12f, 0xCCFFFFFF.toInt()).apply {
-            setPadding(px(6), 0, px(6), px(4))
+        val status = ui.text(statusText, 11f, Ui.MUTED, ui.display).apply {
+            letterSpacing = 0.08f
+            gravity = Gravity.CENTER
+            maxLines = 1
+            setPadding(px(6), 0, px(6), px(6))
         }
         val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        row.addView(actionButton(str(R.string.overlay_start), 0xFF2E7D32.toInt()) { hideMenu(); actions.onStartPressed() })
-        row.addView(actionButton(str(R.string.overlay_stop), 0xFFC62828.toInt()) { hideMenu(); actions.onStopPressed() })
-        row.addView(actionButton(str(R.string.overlay_hide), 0xFF455A64.toInt()) { hideMenu(); actions.onHidePressed() })
+        row.addView(ui.iconButton(Icon.PLAY, Ui.MINT, str(R.string.overlay_start), str(R.string.overlay_start)) {
+            hideMenu(); actions.onStartPressed()
+        })
+        row.addView(ui.iconButton(Icon.STOP, Ui.CORAL, str(R.string.overlay_stop), str(R.string.overlay_stop)) {
+            hideMenu(); actions.onStopPressed()
+        })
+        row.addView(ui.iconButton(Icon.SETTINGS, Ui.TEXT, str(R.string.overlay_settings), str(R.string.overlay_settings)) {
+            hideMenu(); showSettings()
+        })
+        row.addView(ui.iconButton(Icon.HIDE, Ui.MUTED, str(R.string.overlay_hide), str(R.string.overlay_hide)) {
+            hideMenu(); actions.onHidePressed()
+        })
         root.addView(status)
         root.addView(row)
         root.setOnTouchListener { _, e ->
@@ -272,8 +299,8 @@ class OverlayController(
         val params = windowParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, "menu")
         params.flags = params.flags or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
         params.x = (bubbleParams.x + bubbleSize / 2 - w / 2).coerceIn(0, (g.width - w).coerceAtLeast(0))
-        val below = bubbleParams.y + bubbleSize + px(6)
-        params.y = if (below + h <= g.height) below else (bubbleParams.y - h - px(6)).coerceAtLeast(0)
+        val below = bubbleParams.y + bubbleSize + px(8)
+        params.y = if (below + h <= g.height) below else (bubbleParams.y - h - px(8)).coerceAtLeast(0)
 
         if (addWindow(root, params)) {
             menu = root
@@ -298,6 +325,7 @@ class OverlayController(
      */
     fun showSelection(initial: List<Step>, holdMs: Long, gapMs: Long, pathMs: Long) {
         if (selecting) return
+        hideSettings()
         selecting = true
         defaultHoldMs = holdMs
         defaultGapMs = gapMs
@@ -443,36 +471,45 @@ class OverlayController(
         if (panel != null || !selecting) return
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            background = rounded(0xF2202124.toInt(), px(16).toFloat())
-            setPadding(px(12), px(10), px(12), px(10))
+            background = ui.glass(24f)
+            setPadding(px(16), px(14), px(16), px(12))
         }
-        root.addView(label(str(R.string.overlay_drag_hint), 13f, 0xDDFFFFFF.toInt()))
-        val status = label("", 15f, 0xFFFFFFFF.toInt()).apply {
-            typeface = Typeface.MONOSPACE
-            setPadding(0, px(4), 0, px(6))
+        val status = ui.text("", 14f, Ui.TEXT, ui.display).apply {
+            fontFeatureSettings = "tnum"
+            maxLines = 1
         }
         root.addView(status)
-        val nudges = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        nudges.addView(nudgeButton("◀", -1, 0, str(R.string.nudge_left)))
-        nudges.addView(nudgeButton("▲", 0, -1, str(R.string.nudge_up)))
-        nudges.addView(nudgeButton("▼", 0, 1, str(R.string.nudge_down)))
-        nudges.addView(nudgeButton("▶", 1, 0, str(R.string.nudge_right)))
-        root.addView(nudges)
-        val add = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        val addPoint = actionButton(str(R.string.overlay_add_point), 0xFF1565C0.toInt()) { onAddPoint() }
-        val addDrawing = actionButton(str(R.string.overlay_add_drawing), 0xFF6A1B9A.toInt()) { onAddDrawing() }
-        val undo = actionButton("↶", 0xFF37474F.toInt()) { onUndo() }.apply {
-            minWidth = px(52)
-            contentDescription = str(R.string.overlay_undo)
+        root.addView(ui.text(str(R.string.overlay_drag_hint), 12f, Ui.MUTED).apply {
+            setPadding(0, px(4), 0, px(8))
+        })
+        val tools = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
         }
-        add.addView(addPoint)
-        add.addView(addDrawing)
-        add.addView(undo)
-        root.addView(add)
-        val buttons = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        buttons.addView(actionButton(str(R.string.overlay_cancel), 0xFF455A64.toInt()) { actions.onCancelPressed() })
-        val ready = actionButton(str(R.string.overlay_ready), 0xFF2E7D32.toInt()) { confirmSteps() }
+        val addPoint = ui.iconButton(Icon.ADD_POINT, Ui.SKY, str(R.string.overlay_add_point), str(R.string.overlay_add_point)) { onAddPoint() }
+        val addDrawing = ui.iconButton(Icon.DRAW, Ui.VIOLET, str(R.string.overlay_add_drawing), str(R.string.overlay_add_drawing)) { onAddDrawing() }
+        val undo = ui.iconButton(Icon.UNDO, Ui.TEXT, str(R.string.overlay_undo_short), str(R.string.overlay_undo)) { onUndo() }
+        tools.addView(addPoint)
+        tools.addView(addDrawing)
+        tools.addView(undo)
+        tools.addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
+        for ((icon, delta, description) in listOf(
+            Triple(Icon.LEFT, -1 to 0, R.string.nudge_left),
+            Triple(Icon.UP, 0 to -1, R.string.nudge_up),
+            Triple(Icon.DOWN, 0 to 1, R.string.nudge_down),
+            Triple(Icon.RIGHT, 1 to 0, R.string.nudge_right),
+        )) {
+            tools.addView(nudgeButton(icon, delta.first, delta.second, str(description)))
+        }
+        root.addView(tools)
+        val buttons = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END
+            setPadding(0, px(10), 0, 0)
+        }
+        buttons.addView(ui.button(str(R.string.overlay_cancel), Ui.TEXT, filled = false) { actions.onCancelPressed() })
+        buttons.addView(View(context), LinearLayout.LayoutParams(px(8), 1))
+        val ready = ui.button(str(R.string.overlay_ready), Ui.MINT, filled = true) { confirmSteps() }
         buttons.addView(ready)
         root.addView(buttons)
 
@@ -512,7 +549,7 @@ class OverlayController(
         val steps = context.getString(R.string.overlay_steps, drafts.size, SequenceRules.MAX_STEPS)
         panelStatus?.text = if (active != null) {
             val index = drafts.indexOf(active) + 1
-            steps + "  " + context.getString(
+            steps + "   ·   " + context.getString(
                 R.string.overlay_active,
                 index,
                 active.params.x + markerSize / 2,
@@ -522,9 +559,9 @@ class OverlayController(
             steps
         }
         val canAdd = drafts.size < SequenceRules.MAX_STEPS
-        for (b in panelAddButtons) setEnabledLook(b, canAdd)
-        panelUndo?.let { setEnabledLook(it, drafts.isNotEmpty()) }
-        panelReady?.let { setEnabledLook(it, drafts.isNotEmpty()) }
+        for (b in panelAddButtons) ui.setEnabled(b, canAdd)
+        panelUndo?.let { ui.setEnabled(it, drafts.isNotEmpty()) }
+        panelReady?.let { ui.setEnabled(it, drafts.isNotEmpty()) }
 
         val activeY = active?.let { it.params.y + markerSize / 2 } ?: 0
         val wantTop = activeY > screen.geometry().height / 2
@@ -534,17 +571,12 @@ class OverlayController(
         }
     }
 
-    private fun setEnabledLook(view: View, enabled: Boolean) {
-        view.isEnabled = enabled
-        view.alpha = if (enabled) 1f else 0.4f
-    }
-
     private fun positionPanel(params: WindowManager.LayoutParams) {
         val root = panel ?: return
         root.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
         val g = screen.geometry()
         params.x = ((g.width - root.measuredWidth) / 2).coerceAtLeast(0)
-        params.y = if (panelAtTop) px(48) else (g.height - root.measuredHeight - px(48)).coerceAtLeast(0)
+        params.y = if (panelAtTop) px(40) else (g.height - root.measuredHeight - px(40)).coerceAtLeast(0)
     }
 
     private fun placePanel() {
@@ -583,6 +615,7 @@ class OverlayController(
     fun onDisplayChanged() {
         val g = screen.geometry()
         hideMenu()
+        hideSettings()
         if (isBubbleShowing) {
             clampBubble(g)
             keepBubbleOffTargets(update = false)
@@ -611,6 +644,10 @@ class OverlayController(
             if (points.any { windowContains(m, it.x, it.y) }) moved = true
             hideMenu() // Pressing Volume Up while the menu is open also closes it.
         }
+        settings?.let { panel ->
+            if (points.any { windowContains(panel, it.x, it.y) }) moved = true
+            hideSettings()
+        }
         if (isBubbleShowing && points.any { windowContains(bubble, it.x, it.y) }) {
             guarded = points
             keepBubbleOffTargets()
@@ -632,6 +669,7 @@ class OverlayController(
 
     fun removeAll() {
         hideMenu()
+        hideSettings()
         hideSelection()
         if (isBubbleShowing) removeWindow(bubble)
         isBubbleShowing = false
@@ -696,57 +734,34 @@ class OverlayController(
 
     private fun str(id: Int): String = context.getString(id)
 
-    private fun rounded(color: Int, radius: Float) = GradientDrawable().apply {
-        setColor(color)
-        cornerRadius = radius
+    private fun nudgeButton(icon: Icon, dx: Int, dy: Int, description: String): View {
+        val button = IconView(context, icon, Ui.SOFT).apply {
+            background = ui.pill(0x14FFFFFF, 12f)
+            contentDescription = description
+            isClickable = true
+        }
+        button.layoutParams = LinearLayout.LayoutParams(px(34), px(34)).apply { setMargins(px(2), 0, px(2), 0) }
+        repeatOnHold(button) { moveActiveBy(dx, dy) }
+        return button
     }
 
-    private fun label(text: String, sp: Float, color: Int) = TextView(context).apply {
-        this.text = text
-        setTextColor(color)
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
-        gravity = Gravity.CENTER
-        maxLines = 1
-    }
-
-    private fun actionButton(text: String, color: Int, onClick: () -> Unit) = TextView(context).apply {
-        this.text = text
-        setTextColor(0xFFFFFFFF.toInt())
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-        typeface = Typeface.DEFAULT_BOLD
-        gravity = Gravity.CENTER
-        minWidth = px(76)
-        minHeight = px(46)
-        setPadding(px(12), 0, px(12), 0)
-        background = RippleDrawable(
-            ColorStateList.valueOf(0x55FFFFFF),
-            rounded(color, px(10).toFloat()),
-            ColorDrawable(0xFFFFFFFF.toInt()),
-        )
-        isClickable = true
-        setOnClickListener { onClick() }
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ).apply { setMargins(px(3), px(3), px(3), px(3)) }
-    }
-
-    private fun nudgeButton(text: String, dx: Int, dy: Int, description: String): TextView {
-        val button = actionButton(text, 0xFF37474F.toInt()) {}
-        button.minWidth = px(52)
-        button.contentDescription = description
+    /** Runs [action] once on touch, then repeats while held (faster after a while). */
+    private fun repeatOnHold(view: View, action: (fast: Boolean) -> Unit) {
+        var count = 0
         val repeat = object : Runnable {
             override fun run() {
-                moveActiveBy(dx, dy)
-                handler.postDelayed(this, 50)
+                count++
+                action(count > 12)
+                handler.postDelayed(this, 70)
             }
         }
-        button.setOnTouchListener { v, e ->
+        view.setOnTouchListener { v, e ->
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     v.isPressed = true
-                    moveActiveBy(dx, dy)
-                    handler.postDelayed(repeat, 400)
+                    count = 0
+                    action(false)
+                    handler.postDelayed(repeat, 380)
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     v.isPressed = false
@@ -756,7 +771,212 @@ class OverlayController(
             }
             true
         }
-        return button
+    }
+
+    // ---------------------------------------------------------------- settings panel
+
+    /** Every setting of the app, reachable from the floating circle. Changes apply immediately. */
+    fun showSettings() {
+        if (settings != null) return
+        val g = screen.geometry()
+        val content = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(px(20), px(16), px(20), px(18))
+        }
+        val header = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        header.addView(ui.text(str(R.string.settings_title), 22f, Ui.TEXT, ui.displayHeavy), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        header.addView(IconView(context, Icon.CLOSE, Ui.SOFT).apply {
+            background = ui.pill(0x14FFFFFF, 18f)
+            contentDescription = str(R.string.settings_close)
+            isClickable = true
+            setOnClickListener { hideSettings() }
+        }, LinearLayout.LayoutParams(px(36), px(36)))
+        content.addView(header)
+
+        content.addView(ui.caption(str(R.string.settings_new_steps)))
+        content.addView(stepper(str(R.string.settings_press), prefs.defaultHoldMs, SequenceRules::clampHold) { prefs.defaultHoldMs = it })
+        content.addView(stepper(str(R.string.settings_pause), prefs.defaultGapMs, SequenceRules::clampGap) { prefs.defaultGapMs = it })
+        content.addView(stepper(str(R.string.settings_drawing), prefs.defaultPathMs, SequenceRules::clampPath) { prefs.defaultPathMs = it })
+
+        val steps = actions.currentSteps()
+        content.addView(ui.caption(context.getString(R.string.settings_steps, steps.size)))
+        when {
+            actions.isChoosingSteps() -> content.addView(note(str(R.string.steps_locked)))
+            steps.isEmpty() -> content.addView(note(str(R.string.steps_empty)))
+            else -> addStepEditors(content, steps)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) addLanguageChips(content)
+
+        val scroll = ScrollView(context).apply {
+            isVerticalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(content)
+        }
+        val root = FrameLayout(context).apply {
+            background = ui.glass(28f)
+            clipToOutline = true
+            addView(scroll)
+            setOnTouchListener { _, e ->
+                if (e.actionMasked == MotionEvent.ACTION_OUTSIDE) {
+                    hideSettings()
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+        val width = minOf(px(380), g.width - px(24))
+        root.measure(
+            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        )
+        val height = minOf(root.measuredHeight, (g.height * 0.86f).toInt())
+        val params = windowParams(width, height, "settings").apply {
+            flags = flags or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+            x = (g.width - width) / 2
+            y = (g.height - height) / 2
+        }
+        if (addWindow(root, params)) settings = root
+    }
+
+    fun hideSettings() {
+        val v = settings ?: return
+        settings = null
+        removeWindow(v)
+    }
+
+    private fun note(text: String) = ui.text(text, 13f, Ui.MUTED).apply { setPadding(0, 0, 0, px(4)) }
+
+    private fun addStepEditors(content: LinearLayout, initial: List<Step>) {
+        val working = initial.toMutableList()
+        val total = ui.text("", 13f, Ui.SOFT, ui.display).apply {
+            fontFeatureSettings = "tnum"
+            setPadding(0, px(10), 0, 0)
+        }
+        fun refreshTotal() {
+            total.text = if (SequenceRules.isTooLong(working)) {
+                str(R.string.steps_too_long)
+            } else {
+                context.getString(R.string.settings_total, SequenceRules.totalDurationMs(working))
+            }
+        }
+        fun commit(index: Int, step: Step) {
+            working[index] = step
+            actions.onTimingsEdited(working.toList())
+            refreshTotal()
+        }
+        working.forEachIndexed { i, step ->
+            content.addView(ui.text(
+                when (step) {
+                    is TapStep -> context.getString(R.string.step_tap, i + 1, step.at.x, step.at.y)
+                    is PathStep -> context.getString(R.string.step_path, i + 1, step.points.size)
+                },
+                13f, Ui.TEXT, ui.bodyMedium,
+            ).apply { setPadding(0, px(10), 0, px(2)) })
+            when (step) {
+                is TapStep -> content.addView(stepper(str(R.string.settings_press), step.holdMs, SequenceRules::clampHold) {
+                    commit(i, (working[i] as TapStep).copy(holdMs = it))
+                })
+                is PathStep -> content.addView(stepper(str(R.string.settings_drawing), step.durationMs, SequenceRules::clampPath) {
+                    commit(i, (working[i] as PathStep).copy(durationMs = it))
+                })
+            }
+            if (i < working.size - 1) {
+                content.addView(stepper(str(R.string.settings_pause), step.delayAfterMs, SequenceRules::clampGap) {
+                    commit(i, when (val s = working[i]) {
+                        is TapStep -> s.copy(delayAfterMs = it)
+                        is PathStep -> s.copy(delayAfterMs = it)
+                    })
+                })
+            }
+        }
+        refreshTotal()
+        content.addView(total)
+    }
+
+    /** Label, then  −  value  +  ; holding a button repeats and speeds up. */
+    private fun stepper(label: String, initial: Long, clamp: (Long) -> Long, onChange: (Long) -> Unit): View {
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, px(3), 0, px(3))
+        }
+        row.addView(ui.text(label, 14f, Ui.SOFT), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        var value = clamp(initial)
+        val shown = ui.text("", 16f, Ui.TEXT, ui.display).apply {
+            gravity = Gravity.CENTER
+            fontFeatureSettings = "tnum"
+            minWidth = px(84)
+        }
+        fun show() {
+            shown.text = context.getString(R.string.value_ms, value)
+        }
+        fun change(up: Boolean, fast: Boolean) {
+            val base = if (up) value else value - 1
+            var step = when {
+                base < 100 -> 1L
+                base < 1000 -> 10L
+                else -> 100L
+            }
+            if (fast) step *= 10
+            val next = clamp(if (up) value + step else value - step)
+            if (next != value) {
+                value = next
+                show()
+                onChange(value)
+            }
+        }
+        show()
+        val minus = IconView(context, Icon.MINUS, Ui.TEXT).apply {
+            background = ui.pill(0x14FFFFFF, 18f)
+            contentDescription = context.getString(R.string.settings_less, label)
+        }
+        val plus = IconView(context, Icon.PLUS, Ui.TEXT).apply {
+            background = ui.pill(0x14FFFFFF, 18f)
+            contentDescription = context.getString(R.string.settings_more, label)
+        }
+        repeatOnHold(minus) { fast -> change(up = false, fast = fast) }
+        repeatOnHold(plus) { fast -> change(up = true, fast = fast) }
+        row.addView(minus, LinearLayout.LayoutParams(px(36), px(36)))
+        row.addView(shown)
+        row.addView(plus, LinearLayout.LayoutParams(px(36), px(36)))
+        return row
+    }
+
+    @TargetApi(Build.VERSION_CODES.TIRAMISU)
+    private fun addLanguageChips(content: LinearLayout) {
+        content.addView(ui.caption(str(R.string.language_label)))
+        val localeManager = context.getSystemService(LocaleManager::class.java)
+        val current = localeManager.applicationLocales.get(0)?.language ?: ""
+        val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+        val choices = listOf("" to str(R.string.settings_lang_auto), "en" to "EN", "ru" to "RU", "tg" to "TJ")
+        for ((tag, name) in choices) {
+            val selected = tag == current
+            val chip = ui.text(name, 13f, if (selected) Ui.INK else Ui.TEXT, ui.display).apply {
+                gravity = Gravity.CENTER
+                minWidth = px(56)
+                minHeight = px(36)
+                setPadding(px(12), 0, px(12), 0)
+                background = ui.pill(if (selected) Ui.MINT else 0x14FFFFFF, 18f)
+                isClickable = true
+                setOnClickListener {
+                    if (!selected) {
+                        hideSettings()
+                        localeManager.applicationLocales = LocaleList.forLanguageTags(tag)
+                        // Reopen once the new language has reached our resources.
+                        handler.postDelayed({ showSettings() }, 450)
+                    }
+                }
+            }
+            row.addView(chip, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                setMargins(0, 0, px(8), 0)
+            })
+        }
+        content.addView(row)
     }
 
     companion object {

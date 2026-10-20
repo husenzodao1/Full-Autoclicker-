@@ -98,4 +98,20 @@
     <string name="default_hold_label">Длительность нажатия новых точек (1–5000)</string>
     <string name="step_hold">нажатие</string>
     <string name="settings_unavailable">Этот экран настроек недоступен на этом устройстве.</string>
+
+    <!-- Settings panel of the floating circle -->
+    <string name="overlay_settings">НАСТРОЙКИ</string>
+    <string name="overlay_undo_short">НАЗАД</string>
+    <string name="settings_title">Настройки</string>
+    <string name="settings_close">Закрыть настройки</string>
+    <string name="settings_new_steps">Новые шаги</string>
+    <string name="settings_press">Нажатие</string>
+    <string name="settings_pause">Пауза</string>
+    <string name="settings_drawing">Время рисунка</string>
+    <string name="settings_steps">Сохранённые шаги · %1$d</string>
+    <string name="settings_total">Одно нажатие = %1$d мс</string>
+    <string name="value_ms">%1$d мс</string>
+    <string name="settings_less">Уменьшить: %1$s</string>
+    <string name="settings_more">Увеличить: %1$s</string>
+    <string name="settings_lang_auto">Авто</string>
 </resources>

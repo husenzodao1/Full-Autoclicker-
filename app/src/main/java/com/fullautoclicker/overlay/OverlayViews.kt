@@ -29,15 +29,14 @@ class BubbleView(context: Context) : View(context) {
         }
 
     private val density = resources.displayMetrics.density
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val rim = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val glass = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Ui.SURFACE }
+    private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 1.5f * density
-        color = 0x99FFFFFF.toInt()
+        strokeWidth = 2f * density
     }
+    private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val glyph = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        strokeWidth = 2.5f * density
+        strokeWidth = 2.2f * density
         strokeCap = Paint.Cap.ROUND
     }
 
@@ -57,20 +56,26 @@ class BubbleView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         val cx = width / 2f
         val cy = height / 2f
-        val r = min(cx, cy) - density
-        fill.color = when (look) {
-            Look.IDLE -> 0xE6424242.toInt()
-            Look.SELECTING -> 0xF0F9A825.toInt()
-            Look.ARMED -> 0xF02E7D32.toInt()
-            Look.PAUSED -> 0xF0546E7A.toInt()
+        val r = min(cx, cy) - 3f * density
+        val accent = when (look) {
+            Look.IDLE -> 0xFFCBD5E1.toInt()
+            Look.SELECTING -> Ui.AMBER
+            Look.ARMED -> Ui.MINT
+            Look.PAUSED -> Ui.SLATE
         }
-        canvas.drawCircle(cx, cy, r, fill)
-        canvas.drawCircle(cx, cy, r, rim)
-        val g = r * 0.38f
+        // Soft outer halo, glass disc, thin colored ring: calm when idle, clear when armed.
+        halo.color = accent and 0x00FFFFFF or 0x33000000
+        halo.strokeWidth = 3f * density
+        canvas.drawCircle(cx, cy, r + 1.5f * density, halo)
+        canvas.drawCircle(cx, cy, r, glass)
+        ring.color = accent and 0x00FFFFFF or (if (look == Look.IDLE) 0x66000000 else 0xE6000000.toInt())
+        canvas.drawCircle(cx, cy, r - density, ring)
+        glyph.color = accent
+        val g = r * 0.34f
         when (look) {
             Look.IDLE -> {
-                glyph.style = Paint.Style.STROKE
-                canvas.drawCircle(cx, cy, g, glyph)
+                glyph.style = Paint.Style.FILL
+                canvas.drawCircle(cx, cy, g * 0.45f, glyph)
             }
             Look.SELECTING -> {
                 glyph.style = Paint.Style.STROKE
@@ -97,24 +102,26 @@ class BubbleView(context: Context) : View(context) {
 @SuppressLint("ViewConstructor")
 class MarkerView(context: Context) : View(context) {
     private val density = resources.displayMetrics.density
-    private val shade = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x26FF1744 }
+    private val shade = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x1A34D399 }
     private val dark = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        color = 0xCC000000.toInt()
+        color = 0x99000000.toInt()
         strokeWidth = 3.5f * density
+        strokeCap = Paint.Cap.ROUND
     }
     private val light = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.WHITE
         strokeWidth = 1.5f * density
+        strokeCap = Paint.Cap.ROUND
     }
-    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFF1744.toInt() }
-    private val badge = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xE61565C0.toInt() }
+    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Ui.CORAL }
+    private val badge = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Ui.SKY }
     private val badgeText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+        color = Ui.INK
         textAlign = Paint.Align.CENTER
-        textSize = 13f * density
-        isFakeBoldText = true
+        textSize = 12f * density
+        typeface = Ui(context).displayHeavy
     }
 
     /** Position of this tap in the sequence (1-based); 0 hides the badge. */
@@ -170,18 +177,18 @@ class PathsView(context: Context) : View(context) {
         strokeWidth = 4f * density
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
-        color = 0xD9AB47BC.toInt()
+        color = Ui.VIOLET
     }
     private val shadow = Paint(line).apply {
         strokeWidth = 7f * density
         color = 0x99000000.toInt()
     }
-    private val start = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF6A1B9A.toInt() }
+    private val start = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Ui.VIOLET }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+        color = Ui.INK
         textAlign = Paint.Align.CENTER
-        textSize = 13f * density
-        isFakeBoldText = true
+        textSize = 12f * density
+        typeface = Ui(context).displayHeavy
     }
 
     /** (step number, points in screen pixels). */
@@ -234,14 +241,15 @@ class DrawView(
         strokeWidth = 4f * density
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
-        color = 0xFFE040FB.toInt()
+        color = Ui.VIOLET
     }
-    private val veil = Paint().apply { color = 0x33000000 }
-    private val hintBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xE6202124.toInt() }
+    private val veil = Paint().apply { color = 0x26000000 }
+    private val hintBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Ui.SURFACE }
     private val hintText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+        color = Ui.TEXT
         textAlign = Paint.Align.CENTER
         textSize = 15f * density
+        typeface = Ui(context).display
     }
 
     init {
@@ -250,8 +258,10 @@ class DrawView(
 
     override fun onDraw(canvas: Canvas) {
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), veil)
-        val top = 56f * density
-        canvas.drawRoundRect(16f * density, top - 28f * density, width - 16f * density, top + 14f * density, 12f * density, 12f * density, hintBg)
+        val top = 64f * density
+        val half = hintText.measureText(hint) / 2 + 22f * density
+        val r = 21f * density
+        canvas.drawRoundRect(width / 2f - half, top - 28f * density, width / 2f + half, top + 14f * density, r, r, hintBg)
         canvas.drawText(hint, width / 2f, top, hintText)
         canvas.drawPath(trace, line)
     }

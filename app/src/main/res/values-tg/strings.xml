@@ -98,4 +98,20 @@
     <string name="default_hold_label">Давомнокии пахши нуқтаҳои нав (1–5000)</string>
     <string name="step_hold">пахш</string>
     <string name="settings_unavailable">Ин экрани танзимот дар ин дастгоҳ дастрас нест.</string>
+
+    <!-- Settings panel of the floating circle -->
+    <string name="overlay_settings">ТАНЗИМОТ</string>
+    <string name="overlay_undo_short">БОЗГАШТ</string>
+    <string name="settings_title">Танзимот</string>
+    <string name="settings_close">Пӯшидани танзимот</string>
+    <string name="settings_new_steps">Қадамҳои нав</string>
+    <string name="settings_press">Пахш</string>
+    <string name="settings_pause">Танаффус</string>
+    <string name="settings_drawing">Вақти тасвир</string>
+    <string name="settings_steps">Қадамҳои захирашуда · %1$d</string>
+    <string name="settings_total">Як пахш = %1$d мс</string>
+    <string name="value_ms">%1$d мс</string>
+    <string name="settings_less">Кам кардан: %1$s</string>
+    <string name="settings_more">Зиёд кардан: %1$s</string>
+    <string name="settings_lang_auto">Худкор</string>
 </resources>

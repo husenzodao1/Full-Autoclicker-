@@ -7,6 +7,7 @@ import android.app.LocaleManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -65,6 +66,8 @@ class MainActivity : Activity() {
     private var lastTouch: Pair<Int, Int>? = null
 
     private val hubListener: () -> Unit = { refresh() }
+
+    private val stepTitleFace by lazy { Typeface.create(resources.getFont(R.font.exo2), 600, false) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -221,7 +224,8 @@ class MainActivity : Activity() {
                 }
                 setTextColor(getColor(R.color.text))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                setPadding(0, dp(8), 0, 0)
+                typeface = stepTitleFace
+                setPadding(0, dp(12), 0, 0)
             })
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL

@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.MotionEvent
@@ -32,8 +33,10 @@ class TestPadView @JvmOverloads constructor(
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         textSize = 14f * density
+        typeface = Typeface.create(resources.getFont(R.font.exo2), 600, false)
+        letterSpacing = 0.08f
     }
-    private val mark = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFF1744.toInt() }
+    private val mark = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFB7185.toInt() }
     private var lastLocalX = -1f
     private var lastLocalY = -1f
     private val title = context.getString(R.string.pad_title)

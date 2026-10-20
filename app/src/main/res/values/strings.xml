@@ -106,4 +106,20 @@
     <string name="default_hold_label">Press length of new points (1–5000)</string>
     <string name="step_hold">press</string>
     <string name="settings_unavailable">This settings screen is not available on this device.</string>
+
+    <!-- Settings panel of the floating circle -->
+    <string name="overlay_settings">SETTINGS</string>
+    <string name="overlay_undo_short">UNDO</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_close">Close settings</string>
+    <string name="settings_new_steps">New steps</string>
+    <string name="settings_press">Press</string>
+    <string name="settings_pause">Pause</string>
+    <string name="settings_drawing">Drawing time</string>
+    <string name="settings_steps">Saved steps · %1$d</string>
+    <string name="settings_total">One press = %1$d ms</string>
+    <string name="value_ms">%1$d ms</string>
+    <string name="settings_less">Decrease %1$s</string>
+    <string name="settings_more">Increase %1$s</string>
+    <string name="settings_lang_auto">Auto</string>
 </resources>
