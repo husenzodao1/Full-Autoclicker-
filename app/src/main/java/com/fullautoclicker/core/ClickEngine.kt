@@ -7,13 +7,17 @@ enum class TapOutcome { COMPLETED, CANCELLED, FAILED }
  * The clicker's state machine and Volume Up policy.
  *
  * Rules enforced here:
- *  - Only an initial Volume Up key-down (repeatCount == 0) of a new press, while [Mode.ARMED],
- *    requests a tap. Auto-repeat from holding the key and the key-up are swallowed but never tap.
+ *  - From START until STOP ([Mode.SELECTING] and [Mode.ARMED]) every Volume Up press is swallowed,
+ *    so it never changes the volume or opens the volume panel. Only in [Mode.IDLE] does Android
+ *    get it back.
+ *  - Only an initial Volume Up key-down (repeatCount == 0) of a new press, while [Mode.ARMED] with
+ *    a sequence valid for the current display, requests one run of the whole sequence (all its
+ *    taps and drawings, in order). Auto-repeat and the key-up are swallowed but never run it.
  *  - A press is identified by its down time, so a duplicated delivery of the same press cannot
  *    tap twice.
- *  - At most one tap is in flight and at most one waits behind it; anything beyond that is
+ *  - At most one run is in flight and at most one waits behind it; anything beyond that is
  *    dropped and counted, so a burst can never build an unbounded gesture queue.
- *  - [stop] discards the waiting tap immediately and nothing is dispatched until re-armed.
+ *  - [stop] discards the waiting run immediately and nothing is dispatched until re-armed.
  *  - Nothing here is persisted; a new engine always starts in [Mode.IDLE].
  *
  * Not thread-safe: call everything from the service's main thread.
@@ -25,12 +29,13 @@ class ClickEngine(
     var mode: Mode = Mode.IDLE
         private set
 
-    /** Last confirmed target. Kept after STOP only to pre-position the marker next time. */
-    var target: Target? = null
+    /** Last confirmed sequence. Kept after STOP only to pre-position the markers next time. */
+    var sequence: TapSequence? = null
         private set
 
+
     /** Why the clicker last returned to IDLE (null after a fresh start or a new READY). */
-    var lastStopReason: String? = null
+    var lastStopReason: StopReason? = null
         private set
 
     /** Invoked after any state, counter or statistics change. */
@@ -61,6 +66,10 @@ class ClickEngine(
     var pressesWhilePaused = 0L
         private set
 
+    /** Volume Up presses swallowed while choosing a target (no tap, no volume change). */
+    var pressesWithoutTarget = 0L
+        private set
+
     /** Most recently dispatched tap, used for end-to-end latency matching. */
     var lastDispatched: TapRecord? = null
         private set
@@ -74,10 +83,10 @@ class ClickEngine(
 
     fun isInFlight(id: Long): Boolean = inFlight?.id == id
 
-    /** True when armed but the display no longer matches the geometry the target was picked in. */
+    /** True when armed but the display no longer matches the geometry the sequence was made on. */
     fun isPaused(current: DisplayGeometry): Boolean {
-        val t = target ?: return false
-        return mode == Mode.ARMED && t.geometry != current
+        val s = sequence ?: return false
+        return mode == Mode.ARMED && s.geometry != current
     }
 
     /** START: show the marker. Clicking is disabled for the whole selection. */
@@ -87,10 +96,10 @@ class ClickEngine(
         changed()
     }
 
-    /** READY: save the target and arm. Ignored unless a selection is in progress. */
-    fun confirmTarget(newTarget: Target): Boolean {
-        if (mode != Mode.SELECTING) return false
-        target = newTarget
+    /** READY: save the sequence and arm. Ignored unless a selection is in progress or it is empty. */
+    fun confirmSequence(newSequence: TapSequence): Boolean {
+        if (mode != Mode.SELECTING || newSequence.steps.isEmpty()) return false
+        sequence = newSequence
         lastStopReason = null
         // A new session never waits on a tap from the previous one; its late callback is ignored.
         inFlight = null
@@ -100,14 +109,26 @@ class ClickEngine(
         return true
     }
 
+    /**
+     * Applies new timings to the armed sequence (from the settings screen). Only accepted when the
+     * steps are the same taps and drawings at the same places; positions change only via START.
+     */
+    fun retime(steps: List<Step>): Boolean {
+        val current = sequence ?: return false
+        if (!SequenceRules.sameShape(current.steps, steps)) return false
+        sequence = current.copy(steps = steps)
+        changed()
+        return true
+    }
+
     /** Leaves selection without arming. */
     fun cancelSelection() {
         if (mode != Mode.SELECTING) return
-        stop("Selection cancelled")
+        stop(StopReason.SELECTION_CANCELLED)
     }
 
     /** STOP: no new taps from now on; a queued tap is discarded. */
-    fun stop(reason: String) {
+    fun stop(reason: StopReason) {
         val wasActive = mode != Mode.IDLE || queued != null
         queued = null
         mode = Mode.IDLE
@@ -148,16 +169,23 @@ class ClickEngine(
             return KeyVerdict.PASS
         }
 
-        val t = target
-        if (mode != Mode.ARMED || t == null) return KeyVerdict.PASS
+        if (mode == Mode.IDLE) return KeyVerdict.PASS
+
+        // START..STOP: the press belongs to the clicker, whether or not it taps.
+        ownedPressDownTime = downTime
+        val t = sequence
+        if (mode != Mode.ARMED || t == null) {
+            pressesWithoutTarget++
+            changed()
+            return KeyVerdict.CONSUME
+        }
         if (t.geometry != geometry) {
             // Rotated or resized since READY: the saved point no longer means the same spot.
             pressesWhilePaused++
             changed()
-            return KeyVerdict.PASS
+            return KeyVerdict.CONSUME
         }
 
-        ownedPressDownTime = downTime
         requestTap(eventTime)
         return KeyVerdict.CONSUME
     }
@@ -180,7 +208,7 @@ class ClickEngine(
         }
         val next = queued
         queued = null
-        if (next != null && mode == Mode.ARMED && target != null) dispatch(next)
+        if (next != null && mode == Mode.ARMED && sequence != null) dispatch(next)
         changed()
         return tap
     }
@@ -197,6 +225,7 @@ class ClickEngine(
         tapsLost = 0
         repeatsSwallowed = 0
         pressesWhilePaused = 0
+        pressesWithoutTarget = 0
         changed()
     }
 
@@ -204,7 +233,7 @@ class ClickEngine(
         tapsRequested++
         val tap = TapRecord(nextTapId++, keyEventTime)
         val current = inFlight
-        if (current != null && clock() - current.dispatchedAt > STUCK_TAP_MS) {
+        if (current != null && clock() - current.dispatchedAt > current.durationMs + STUCK_TAP_MS) {
             // The platform never reported back; don't let one lost callback block every later tap.
             inFlight = null
             tapsLost++
@@ -218,11 +247,12 @@ class ClickEngine(
     }
 
     private fun dispatch(tap: TapRecord) {
-        val t = target ?: return
+        val s = sequence ?: return
         tap.dispatchedAt = clock()
+        tap.durationMs = SequenceRules.totalDurationMs(s.steps)
         inFlight = tap
         val result = try {
-            dispatcher.dispatchTap(tap.id, t.x, t.y)
+            dispatcher.dispatch(tap.id, s)
         } catch (e: RuntimeException) {
             DispatchResult.REJECTED
         }
@@ -243,7 +273,7 @@ class ClickEngine(
     companion object {
         private const val NO_PRESS = Long.MIN_VALUE
 
-        /** A tap still unreported after this long is treated as lost. */
+        /** A run still unreported this long after its expected end is treated as lost. */
         const val STUCK_TAP_MS = 1500L
     }
 }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test-only app (not part of Full Auto Clicker): a landscape, full-screen SurfaceView "game"
+     that logs every touch it receives, to check injected taps the way a game would see them. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.fullautoclicker.touchtest"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <application
+        android:label="Touch Test Game"
+        android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <activity
+            android:name=".GameActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:screenOrientation="sensorLandscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

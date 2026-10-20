@@ -9,6 +9,7 @@ import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import com.fullautoclicker.R
 
 /**
  * A touch target inside the app for checking the clicker: aim the marker here, press Volume Up,
@@ -35,10 +36,12 @@ class TestPadView @JvmOverloads constructor(
     private val mark = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFF1744.toInt() }
     private var lastLocalX = -1f
     private var lastLocalY = -1f
+    private val title = context.getString(R.string.pad_title)
+    private val hint = context.getString(R.string.pad_hint)
 
     init {
         isClickable = true
-        contentDescription = "Test pad"
+        contentDescription = context.getString(R.string.pad_desc)
     }
 
     fun setColors(lineColor: Int, textColor: Int) {
@@ -50,8 +53,8 @@ class TestPadView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         val inset = border.strokeWidth
         canvas.drawRoundRect(inset, inset, width - inset, height - inset, 12f * density, 12f * density, border)
-        canvas.drawText("TEST PAD", width / 2f, height / 2f - 4f * density, text)
-        canvas.drawText("aim here, press Volume Up", width / 2f, height / 2f + 16f * density, text)
+        canvas.drawText(title, width / 2f, height / 2f - 4f * density, text)
+        canvas.drawText(hint, width / 2f, height / 2f + 16f * density, text)
         if (lastLocalX >= 0) canvas.drawCircle(lastLocalX, lastLocalY, 4f * density, mark)
     }
 

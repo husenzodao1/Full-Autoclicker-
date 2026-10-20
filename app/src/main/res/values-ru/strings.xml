@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_summary">«Громкость +» = одно касание в выбранной точке</string>
+    <string name="a11y_description">Каждое нажатие кнопки «Громкость +» выполняет один раз касания и свайпы, выбранные плавающими маркерами (до 10 шагов, по порядку).\n\nОт СТАРТ до СТОП кнопка «Громкость +» перехватывается: громкость не меняется и панель громкости не появляется. «Громкость −» никогда не перехватывается. В режиме ожидания обе кнопки работают как обычно.\n\nСлужба не читает содержимое экрана, не собирает данные и не имеет доступа к интернету.</string>
+
+    <string name="tagline">Одно нажатие «Громкость +» = все ваши касания и свайпы по порядку.</string>
+
+    <string name="language_label">Язык</string>
+    <string name="btn_language">Язык: %1$s</string>
+    <string name="language_system">Как в системе</string>
+
+    <string name="card_setup">1 · Специальные возможности</string>
+    <string name="status_service_on">ВКЛЮЧЕНО и работает</string>
+    <string name="status_service_off">ВЫКЛ: включите Full Auto Clicker в разделе «Специальные возможности»</string>
+    <string name="status_service_stuck">Включено в настройках, но не работает. Выключите и включите снова.</string>
+    <string name="btn_enable">Открыть спец. возможности</string>
+    <string name="btn_settings">Спец. возможности</string>
+    <string name="btn_app_info">О приложении</string>
+    <string name="setup_help">Samsung: Настройки → Специальные возможности → Установленные приложения → Full Auto Clicker → Вкл.\n\nЕсли появилось «Доступ для приложения запрещен» или «Контролируется настройками с ограниченным доступом» (так Android 13+ защищает приложения, установленные из файла):\n1. Нажмите «Закрыть».\n2. Нажмите «О приложении» ниже → ⋮ (вверху справа) → «Разрешить настройки с ограниченным доступом» и подтвердите PIN-кодом или отпечатком.\n3. Вернитесь и снова включите службу.\nПункт в меню ⋮ появляется только после того, как вы один раз попробовали включить службу и увидели это сообщение.\n\nРекомендуется: Настройки → Батарея → Ограничения фонового использования → Приложения, которые никогда не спят → добавьте Full Auto Clicker.</string>
+
+    <string name="card_control">2 · Управление</string>
+    <string name="mode_unavailable">Сначала включите специальные возможности.</string>
+    <string name="mode_idle">ОЖИДАНИЕ: кнопки громкости работают как обычно.</string>
+    <string name="mode_selecting">ВЫБОР: перетащите маркер и нажмите ГОТОВО. «Громкость +» заблокирована до СТОП.</string>
+    <string name="mode_armed">АКТИВЕН: шагов %1$d, %2$d мс на нажатие. Каждое нажатие «Громкость +» выполняет их один раз. Панели громкости нет до СТОП.</string>
+    <string name="mode_paused">ПАУЗА: экран повёрнут после ГОТОВО. «Громкость +» ничего не делает, пока не вернёте поворот или не нажмёте СТАРТ.</string>
+    <string name="mode_last_stop">Последняя остановка: %1$s</string>
+    <string name="btn_show">Показать плавающую кнопку</string>
+    <string name="btn_stop">СТОП</string>
+    <string name="control_help">Нажмите плавающий кружок → СТАРТ → расставьте маркеры (+ ТОЧКА, + РИСУНОК) → ГОТОВО. Маркеры исчезнут, а их позиции сохранятся. Каждое нажатие «Громкость +» выполняет все шаги один раз по порядку; удержание кнопки не повторяет. От СТАРТ до СТОП «Громкость +» не меняет громкость и не показывает панель громкости. «Громкость −» всегда меняет громкость. СТОП, выключение экрана или отключение службы сразу останавливают кликер; сам он снова не включается.</string>
+
+    <string name="card_test">4 · Проверка и задержка</string>
+    <string name="btn_reset">Сбросить</string>
+    <string name="pad_title">ТЕСТОВАЯ ПАНЕЛЬ</string>
+    <string name="pad_hint">наведите сюда, нажмите «Громкость +»</string>
+    <string name="pad_desc">Тестовая панель</string>
+    <string name="stats_none">пока нет данных</string>
+    <string name="stats_line">посл. %1$d мс · сред. %2$.1f · p95 %3$d · макс. %4$d (n=%5$d)</string>
+    <string name="stats_key_sent">Кнопка → касание отправлено: %1$s</string>
+    <string name="stats_key_done">Кнопка → запуск завершён: %1$s</string>
+    <string name="stats_taps">Касания: отправлено %1$d · выполнено %2$d · отменено %3$d · ошибок %4$d · пропущено %5$d · потеряно %6$d</string>
+    <string name="stats_swallowed">Повторы при удержании пропущены: %1$d · нажатия без касания: %2$d</string>
+    <string name="pad_counts">Получено касаний: %1$d · касаний пальцем: %2$d</string>
+    <string name="pad_latency">Кнопка → касание доставлено: %1$s</string>
+    <string name="pad_last_touch">Последнее касание: %1$d, %2$d</string>
+    <string name="pad_offset">" · шаг %1$d в %2$d, %3$d · смещение %4$d, %5$d"</string>
+
+    <string name="stop_from_bubble">Остановлено</string>
+    <string name="stop_from_app">Остановлено из приложения</string>
+    <string name="stop_selection_cancelled">Выбор отменён</string>
+    <string name="stop_screen_off">Экран выключен</string>
+    <string name="stop_service_off">Служба специальных возможностей выключена</string>
+    <string name="stop_interrupted">Прервано системой</string>
+    <string name="stop_internal_error">Внутренняя ошибка</string>
+
+    <string name="overlay_start">СТАРТ</string>
+    <string name="overlay_stop">СТОП</string>
+    <string name="overlay_hide">СКРЫТЬ</string>
+    <string name="overlay_cancel">ОТМЕНА</string>
+    <string name="overlay_ready">ГОТОВО</string>
+    <string name="overlay_drag_hint">Двигайте маркеры · + ТОЧКА = касание · + РИСУНОК = свайп</string>
+    <string name="overlay_status_idle">ОЖИДАНИЕ</string>
+    <string name="overlay_status_selecting">ВЫБОР цели</string>
+    <string name="overlay_status_armed">АКТИВЕН · шагов: %1$d</string>
+    <string name="overlay_status_paused">ПАУЗА: верните поворот</string>
+    <string name="nudge_left">Сдвинуть влево на 1 пиксель</string>
+    <string name="nudge_up">Сдвинуть вверх на 1 пиксель</string>
+    <string name="nudge_down">Сдвинуть вниз на 1 пиксель</string>
+    <string name="nudge_right">Сдвинуть вправо на 1 пиксель</string>
+    <string name="bubble_desc_idle">Автокликер: ожидание</string>
+    <string name="bubble_desc_selecting">Автокликер: выбор цели</string>
+    <string name="bubble_desc_armed">Автокликер: активен</string>
+    <string name="bubble_desc_paused">Автокликер: пауза</string>
+    <string name="marker_desc">Маркер цели касания</string>
+    <string name="hint_press_ready">Сначала выберите цель и нажмите ГОТОВО</string>
+    <string name="hint_paused">Экран повёрнут после ГОТОВО. Верните поворот или нажмите СТАРТ, чтобы выбрать цель заново.</string>
+
+    <string name="overlay_add_point">+ ТОЧКА</string>
+    <string name="overlay_add_drawing">+ РИСУНОК</string>
+    <string name="overlay_undo">Удалить последний шаг</string>
+    <string name="overlay_steps">Шаги %1$d/%2$d</string>
+    <string name="overlay_active">№%1$d X %2$d Y %3$d</string>
+    <string name="draw_hint">Нарисуйте путь одним пальцем</string>
+    <string name="marker_desc_numbered">Маркер касания, шаг %1$d</string>
+    <string name="card_steps">3 · Шаги (одно нажатие «Громкость +» выполняет все)</string>
+    <string name="steps_help">После СТАРТ: + ТОЧКА добавляет касание, + РИСУНОК записывает свайп (нарисуйте его одним пальцем), ↶ удаляет последний шаг. До 10 шагов; одно нажатие «Громкость +» выполняет их по порядку. Каждое касание можно удерживать от 1 мс до 5 с (долгое нажатие). Длительность нажатий, паузы и длительность свайпов задаются здесь; позиции меняются только через СТАРТ.</string>
+    <string name="default_gap_label">Пауза между шагами (для новых шагов)</string>
+    <string name="default_path_label">Длительность рисунка (для новых)</string>
+    <string name="unit_ms">мс</string>
+    <string name="steps_empty">Шагов пока нет. Нажмите СТАРТ на плавающем кружке.</string>
+    <string name="steps_locked">Завершите выбор шагов (ГОТОВО или ОТМЕНА), чтобы менять время.</string>
+    <string name="steps_too_long">Слишком долго: один запуск должен длиться меньше 59 с. Уменьшите паузы или рисунки.</string>
+    <string name="steps_total">Шагов: %1$d · одно нажатие длится %2$d мс</string>
+    <string name="step_tap">%1$d · Касание в %2$d, %3$d</string>
+    <string name="step_path">%1$d · Рисунок (точек: %2$d)</string>
+    <string name="step_duration">длительность</string>
+    <string name="step_gap">затем пауза</string>
+    <string name="default_hold_label">Длительность нажатия новых точек (1–5000)</string>
+    <string name="step_hold">нажатие</string>
+    <string name="settings_unavailable">Этот экран настроек недоступен на этом устройстве.</string>
+</resources>

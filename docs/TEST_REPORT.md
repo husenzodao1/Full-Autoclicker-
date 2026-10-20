@@ -1,15 +1,42 @@
-# Test report: Full Auto Clicker 1.0.0
+# Test report: Full Auto Clicker
 
 Each result below is **PASSED**, **FAILED**, or **NOT TESTED**. A test is marked PASSED only if it was actually run, and the evidence column says what was observed.
 
 > **This app has not yet been tested on a physical Samsung Galaxy A15 or A16, or on any physical phone.**
 > No device was available in the build environment. Physical volume-key behavior, real latency, and One UI-specific behavior are therefore **NOT TESTED**. See [Not tested](#not-tested). Runtime behavior was verified on an Android 14 emulator configured with the same screen geometry as the A15/A16, with volume keys injected into the kernel input layer.
 
-## Delivered APK
+## Version 1.1.0 (current APK): changes and test status
 
 | | |
 |---|---|
-| File | `dist/FullAutoClicker-1.0.0.apk` |
+| File | `dist/FullAutoClicker-1.1.0.apk`, 86,869 bytes |
+| SHA-256 | `82b40444054c2136d4278d28097e5cdf3dbc36ae018692778bb9cb6287483723` |
+| Package / version | `com.fullautoclicker` 1.1.0 (versionCode 2); same signing key as 1.0.0, so it installs as an update |
+| Permissions | still **none** |
+
+| Change in 1.1.0 | How it was checked | Result |
+|---|---|---|
+| **Russian and Tajik** interface (English default), plus an in-app language picker (Android 13+) | All 90 strings exist in all three languages with the same placeholders (checked by script); the APK contains `ru` and `tg` resources | Build and resources: PASSED. Seeing the translated screens on a phone or emulator: **NOT TESTED** |
+| **Sequences:** up to 10 steps (tap points and drawn swipes); one Volume Up press runs all of them in order | Unit tests: timeline of the example X →40 ms→ X → swipe 0.5 s → swipe 0.2 s → X (starts 0 / 60 / 120 / 660 / 900 ms, run 920 ms); limits (10 steps, pauses 10 ms–10 s, swipes 20 ms–10 s, run under 59 s); path thinning; save/load codec; one press = one run; queue and watchdog with long runs; retiming while armed | Unit: PASSED (38 tests). **Runtime NOT TESTED**: I couldn't confirm on a running system that Android plays the multi-stroke gesture as separate taps and swipes, because the test emulator kept crashing (system_server restarts) |
+| **Press length per tap** from 1 ms to 5 s (long-press), typed in by hand; replaces the 10/20/40 ms choice | Unit tests (range and timeline) | Unit: PASSED. Runtime: **NOT TESTED** |
+| **Volume Up blocked from START to STOP**, also while choosing steps and while paused by rotation (no volume panel, no volume change); a short hint explains why nothing was tapped | Unit tests (choosing, paused, after STOP) | Unit: PASSED. The ARMED case was PASSED on the emulator in 1.0.0 (E10/E12/E14); the new choosing/paused cases: runtime **NOT TESTED** |
+| Setup help for Samsung's "Доступ для приложения запрещен" / restricted-settings screen | Text matches the user's own Samsung screenshot | — |
+| Install and service start | 1.1.0 installed on the emulator (`versionName=1.1.0`), log `Service connected` | PASSED |
+| Taps inside **WhatsApp** and **Free Fire** | Their APKs can't be downloaded here (the hosts are blocked), and Free Fire could not run on a software-emulated x86 device anyway | **NOT TESTED** |
+| Gradle/AGP build, lint, unit tests in CI | GitHub Actions on the 1.1.0 commit | see "CI" below |
+
+**Please test on the phone:**
+1. START, then add 2–3 points and one drawing, then READY.
+2. Open the app's **Test pad** or any app and press Volume Up once.
+3. Check that every point is tapped in order, the swipe follows your drawing, and the volume panel never appears.
+
+## Version 1.0.0 results (below)
+
+Everything from here on was tested on 1.0.0. It is kept as history. 1.1.0 keeps the same key handling and safety design.
+
+| | |
+|---|---|
+| File | `dist/FullAutoClicker-1.0.0.apk` (replaced by 1.1.0) |
 | Package / version | `com.fullautoclicker` 1.0.0 (versionCode 1) |
 | SDK | minSdk 28 (Android 9), targetSdk 36 (Android 16), compileSdk 36 |
 | Size / signature | 45,837 bytes. APK Signature Scheme v3, verified with `apksigner verify`; `zipalign -c` OK |

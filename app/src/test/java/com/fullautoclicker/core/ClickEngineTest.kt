@@ -10,13 +10,17 @@ import org.junit.Test
 class ClickEngineTest {
 
     private class FakeDispatcher : TapDispatcher {
+        /** (run id, x, y of the first step) for every dispatched run. */
         val taps = mutableListOf<Triple<Long, Int, Int>>()
+        val sequences = mutableListOf<TapSequence>()
         var result = DispatchResult.ACCEPTED
         var throwOnDispatch = false
 
-        override fun dispatchTap(id: Long, x: Int, y: Int): DispatchResult {
+        override fun dispatch(id: Long, sequence: TapSequence): DispatchResult {
             if (throwOnDispatch) throw IllegalStateException("boom")
-            taps += Triple(id, x, y)
+            val first = sequence.steps.first().start
+            taps += Triple(id, first.x, first.y)
+            sequences += sequence
             return result
         }
     }
@@ -35,9 +39,12 @@ class ClickEngineTest {
         engine = ClickEngine(dispatcher) { now }
     }
 
+    private fun single(x: Int, y: Int, geometry: DisplayGeometry = portrait) =
+        TapSequence(listOf(TapStep(Point(x, y), 20, 50)), geometry)
+
     private fun arm(x: Int = 540, y: Int = 1170, geometry: DisplayGeometry = portrait) {
         engine.beginSelection()
-        assertTrue(engine.confirmTarget(Target(x, y, geometry)))
+        assertTrue(engine.confirmSequence(single(x, y, geometry)))
     }
 
     /** Sends a full press: down, [repeats] auto-repeats, up. Returns the verdicts. */
@@ -57,17 +64,27 @@ class ClickEngineTest {
     @Test
     fun newEngineStartsIdleWithNothingArmed() {
         assertEquals(Mode.IDLE, engine.mode)
-        assertNull(engine.target)
+        assertNull(engine.sequence)
         assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS), press())
         assertTrue(dispatcher.taps.isEmpty())
     }
 
     @Test
-    fun selectingNeverTapsAndLeavesVolumeAlone() {
+    fun selectingSwallowsVolumeUpWithoutTapping() {
         engine.beginSelection()
-        assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS), press())
-        assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS, KeyVerdict.PASS), press(repeats = 1))
+        assertEquals(listOf(KeyVerdict.CONSUME, KeyVerdict.CONSUME), press())
+        assertEquals(listOf(KeyVerdict.CONSUME, KeyVerdict.CONSUME, KeyVerdict.CONSUME), press(repeats = 1))
         assertTrue(dispatcher.taps.isEmpty())
+        assertEquals(2, engine.pressesWithoutTarget)
+    }
+
+    @Test
+    fun afterStopVolumeUpBelongsToAndroidAgain() {
+        arm()
+        press()
+        engine.stop(StopReason.STOPPED_FROM_BUBBLE)
+        assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS, KeyVerdict.PASS), press(repeats = 1))
+        assertEquals(1, dispatcher.taps.size)
     }
 
     @Test
@@ -132,14 +149,14 @@ class ClickEngineTest {
         arm()
         press()
         press() // queued behind the in-flight tap
-        engine.stop("test")
+        engine.stop(StopReason.STOPPED_FROM_BUBBLE)
         assertEquals(Mode.IDLE, engine.mode)
 
         finishLastTap()
         assertEquals("queued tap must not be dispatched after STOP", 1, dispatcher.taps.size)
         assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS), press())
         assertEquals(1, dispatcher.taps.size)
-        assertEquals("test", engine.lastStopReason)
+        assertEquals(StopReason.STOPPED_FROM_BUBBLE, engine.lastStopReason)
     }
 
     @Test
@@ -147,7 +164,7 @@ class ClickEngineTest {
         arm()
         val downTime = 900L
         assertEquals(KeyVerdict.CONSUME, engine.onVolumeUpKey(true, 0, downTime, downTime, portrait))
-        engine.stop("test")
+        engine.stop(StopReason.STOPPED_FROM_BUBBLE)
         assertEquals(KeyVerdict.CONSUME, engine.onVolumeUpKey(true, 1, downTime, downTime + 500, portrait))
         assertEquals(KeyVerdict.CONSUME, engine.onVolumeUpKey(false, 0, downTime, downTime + 600, portrait))
         assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS), press())
@@ -167,7 +184,8 @@ class ClickEngineTest {
     @Test
     fun rotationPausesTappingUntilTheGeometryMatchesAgain() {
         arm(geometry = portrait)
-        assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS), press(geometry = landscape))
+        // Still swallowed (no volume panel), but no tap at a point that no longer means anything.
+        assertEquals(listOf(KeyVerdict.CONSUME, KeyVerdict.CONSUME), press(geometry = landscape))
         assertTrue(engine.isPaused(landscape))
         assertTrue(dispatcher.taps.isEmpty())
         assertEquals(1, engine.pressesWhilePaused)
@@ -205,7 +223,7 @@ class ClickEngineTest {
         arm()
         press()
         val lostId = dispatcher.taps.last().first
-        now += ClickEngine.STUCK_TAP_MS + 1
+        now += 20 + ClickEngine.STUCK_TAP_MS + 1
         press()
         assertEquals(2, dispatcher.taps.size)
         assertEquals(1, engine.tapsLost)
@@ -221,7 +239,7 @@ class ClickEngineTest {
         arm()
         press()
         val orphanId = dispatcher.taps.last().first
-        engine.stop("test") // its callback never arrives
+        engine.stop(StopReason.STOPPED_FROM_BUBBLE) // its callback never arrives
         arm()
         press()
         assertEquals("first press after READY taps immediately", 2, dispatcher.taps.size)
@@ -241,9 +259,9 @@ class ClickEngineTest {
 
     @Test
     fun readyOutsideSelectionIsIgnored() {
-        assertFalse(engine.confirmTarget(Target(1, 2, portrait)))
+        assertFalse(engine.confirmSequence(single(1, 2)))
         assertEquals(Mode.IDLE, engine.mode)
-        assertNull(engine.target)
+        assertNull(engine.sequence)
     }
 
     @Test
@@ -260,8 +278,9 @@ class ClickEngineTest {
         press()
         finishLastTap()
         engine.beginSelection()
-        assertEquals(listOf(KeyVerdict.PASS, KeyVerdict.PASS), press())
-        assertTrue(engine.confirmTarget(Target(300, 400, portrait)))
+        assertEquals(listOf(KeyVerdict.CONSUME, KeyVerdict.CONSUME), press())
+        assertEquals(1, dispatcher.taps.size)
+        assertTrue(engine.confirmSequence(single(300, 400)))
         press()
         assertEquals(2, dispatcher.taps.size)
         assertEquals(300, dispatcher.taps.last().second)

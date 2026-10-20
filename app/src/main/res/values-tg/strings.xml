@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_summary">«Овоз +» = як ламс дар нуқтаи интихобшуда</string>
+    <string name="a11y_description">Ҳар пахши тугмаи «Овоз +» ламсҳо ва кашишҳоеро, ки бо нишонаҳои шинокунанда интихоб кардаед, як бор иҷро мекунад (то 10 қадам, бо тартиб).\n\nАз ОҒОЗ то ҚАТЪ тугмаи «Овоз +» боздошта мешавад: баландии овоз тағйир намеёбад ва панели овоз намебарояд. «Овоз −» ҳеҷ гоҳ боздошта намешавад. Дар ҳолати интизорӣ ҳарду тугма мисли одат кор мекунанд.\n\nИн хидмат мундариҷаи экранро намехонад, маълумот ҷамъ намекунад ва ба интернет дастрасӣ надорад.</string>
+
+    <string name="tagline">Як пахши «Овоз +» = ҳамаи ламсҳо ва кашишҳои шумо бо тартиб.</string>
+
+    <string name="language_label">Забон</string>
+    <string name="btn_language">Забон: %1$s</string>
+    <string name="language_system">Мисли система</string>
+
+    <string name="card_setup">1 · Имкониятҳои махсус</string>
+    <string name="status_service_on">ДАРГИРОНДА ва кор мекунад</string>
+    <string name="status_service_off">ХОМӮШ: Full Auto Clicker-ро дар «Имкониятҳои махсус» даргиронед</string>
+    <string name="status_service_stuck">Дар танзимот даргиронда аст, вале кор намекунад. Хомӯш карда, аз нав даргиронед.</string>
+    <string name="btn_enable">Кушодани имкониятҳои махсус</string>
+    <string name="btn_settings">Имкониятҳои махсус</string>
+    <string name="btn_app_info">Дар бораи барнома</string>
+    <string name="setup_help">Samsung: Настройки → Специальные возможности → Установленные приложения → Full Auto Clicker → даргиронед.\n\nАгар паёми «Доступ для приложения запрещен» ё «Контролируется настройками с ограниченным доступом» пайдо шавад (Android 13+ барномаҳоеро, ки аз файл насб шудаанд, ҳамин тавр ҳифз мекунад):\n1. «Закрыть»-ро пахш кунед.\n2. Дар поён «Дар бораи барнома»-ро пахш кунед → ⋮ (боло, тарафи рост) → «Разрешить настройки с ограниченным доступом» ва бо PIN ё изи ангушт тасдиқ кунед.\n3. Баргардед ва хидматро аз нав даргиронед.\nБанди менюи ⋮ танҳо пас аз он пайдо мешавад, ки шумо як бор кӯшиш карда, ин паёмро дидаед.\n\nТавсия: Настройки → Батарея → Ограничения фонового использования → Приложения, которые никогда не спят → Full Auto Clicker-ро илова кунед.</string>
+
+    <string name="card_control">2 · Идоракунӣ</string>
+    <string name="mode_unavailable">Аввал имкониятҳои махсусро даргиронед.</string>
+    <string name="mode_idle">ИНТИЗОРӢ: тугмаҳои овоз мисли одат кор мекунанд.</string>
+    <string name="mode_selecting">ИНТИХОБ: нишонаро кашед ва ТАЙЁР-ро пахш кунед. «Овоз +» то ҚАТЪ баста аст.</string>
+    <string name="mode_armed">ФАЪОЛ: қадамҳо %1$d, %2$d мс барои як пахш. Ҳар пахши «Овоз +» онҳоро як бор иҷро мекунад. То ҚАТЪ панели овоз намебарояд.</string>
+    <string name="mode_paused">ТАНАФФУС: пас аз ТАЙЁР экран гардонда шуд. «Овоз +» то он даме ки экранро барнагардонед ё ОҒОЗ-ро пахш накунед, ҳеҷ кор намекунад.</string>
+    <string name="mode_last_stop">Қатъи охирин: %1$s</string>
+    <string name="btn_show">Нишон додани тугмаи шинокунанда</string>
+    <string name="btn_stop">ҚАТЪ</string>
+    <string name="control_help">Доираи шинокунандаро пахш кунед → ОҒОЗ → нишонаҳоро ҷойгир кунед (+ НУҚТА, + ТАСВИР) → ТАЙЁР. Нишонаҳо нопадид мешаванд, вале мавқеашон нигоҳ дошта мешавад. Ҳар пахши «Овоз +» ҳамаи қадамҳоро як бор бо тартиб иҷро мекунад; нигоҳ доштани тугма такрор намекунад. Аз ОҒОЗ то ҚАТЪ «Овоз +» баландии овозро тағйир намедиҳад ва панели овозро нишон намедиҳад. «Овоз −» ҳамеша овозро тағйир медиҳад. ҚАТЪ, хомӯш шудани экран ё хомӯш кардани хидмат кликерро фавран бозмедорад; он худ аз худ дубора фаъол намешавад.</string>
+
+    <string name="card_test">4 · Санҷиш ва таъхир</string>
+    <string name="btn_reset">Аз нав</string>
+    <string name="pad_title">ПАНЕЛИ САНҶИШ</string>
+    <string name="pad_hint">ин ҷоро ҳадаф гиред, «Овоз +»-ро пахш кунед</string>
+    <string name="pad_desc">Панели санҷиш</string>
+    <string name="stats_none">ҳоло маълумот нест</string>
+    <string name="stats_line">охирин %1$d мс · миёна %2$.1f · p95 %3$d · ҳадди аксар %4$d (n=%5$d)</string>
+    <string name="stats_key_sent">Тугма → ламс фиристода шуд: %1$s</string>
+    <string name="stats_key_done">Тугма → иҷро анҷом ёфт: %1$s</string>
+    <string name="stats_taps">Ламсҳо: фиристода %1$d · иҷро %2$d · бекор %3$d · хато %4$d · партофта %5$d · гумшуда %6$d</string>
+    <string name="stats_swallowed">Такрорҳои нигоҳдорӣ нодида гирифта шуданд: %1$d · пахшҳо бе ламс: %2$d</string>
+    <string name="pad_counts">Ламсҳои қабулшуда: %1$d · ламси ангушт: %2$d</string>
+    <string name="pad_latency">Тугма → ламс расид: %1$s</string>
+    <string name="pad_last_touch">Ламси охирин: %1$d, %2$d</string>
+    <string name="pad_offset">" · қадами %1$d дар %2$d, %3$d · фарқ %4$d, %5$d"</string>
+
+    <string name="stop_from_bubble">Қатъ карда шуд</string>
+    <string name="stop_from_app">Аз барнома қатъ карда шуд</string>
+    <string name="stop_selection_cancelled">Интихоб бекор карда шуд</string>
+    <string name="stop_screen_off">Экран хомӯш шуд</string>
+    <string name="stop_service_off">Хидмати имкониятҳои махсус хомӯш шуд</string>
+    <string name="stop_interrupted">Аз ҷониби система қатъ шуд</string>
+    <string name="stop_internal_error">Хатои дохилӣ</string>
+
+    <string name="overlay_start">ОҒОЗ</string>
+    <string name="overlay_stop">ҚАТЪ</string>
+    <string name="overlay_hide">ПИНҲОН</string>
+    <string name="overlay_cancel">БЕКОР</string>
+    <string name="overlay_ready">ТАЙЁР</string>
+    <string name="overlay_drag_hint">Нишонаҳоро кашед · + НУҚТА = ламс · + ТАСВИР = кашиш</string>
+    <string name="overlay_status_idle">ИНТИЗОРӢ</string>
+    <string name="overlay_status_selecting">ИНТИХОБИ ҳадаф</string>
+    <string name="overlay_status_armed">ФАЪОЛ · қадамҳо: %1$d</string>
+    <string name="overlay_status_paused">ТАНАФФУС: экранро баргардонед</string>
+    <string name="nudge_left">1 пиксел ба чап</string>
+    <string name="nudge_up">1 пиксел ба боло</string>
+    <string name="nudge_down">1 пиксел ба поён</string>
+    <string name="nudge_right">1 пиксел ба рост</string>
+    <string name="bubble_desc_idle">Автокликер: интизорӣ</string>
+    <string name="bubble_desc_selecting">Автокликер: интихоби ҳадаф</string>
+    <string name="bubble_desc_armed">Автокликер: фаъол</string>
+    <string name="bubble_desc_paused">Автокликер: танаффус</string>
+    <string name="marker_desc">Нишонаи ҳадафи ламс</string>
+    <string name="hint_press_ready">Аввал ҳадафро интихоб карда, ТАЙЁР-ро пахш кунед</string>
+    <string name="hint_paused">Пас аз ТАЙЁР экран гардонда шуд. Экранро баргардонед ё барои интихоби нави ҳадаф ОҒОЗ-ро пахш кунед.</string>
+
+    <string name="overlay_add_point">+ НУҚТА</string>
+    <string name="overlay_add_drawing">+ ТАСВИР</string>
+    <string name="overlay_undo">Қадами охиринро нест кардан</string>
+    <string name="overlay_steps">Қадамҳо %1$d/%2$d</string>
+    <string name="overlay_active">№%1$d X %2$d Y %3$d</string>
+    <string name="draw_hint">Роҳро бо як ангушт кашед</string>
+    <string name="marker_desc_numbered">Нишонаи ламс, қадами %1$d</string>
+    <string name="card_steps">3 · Қадамҳо (як пахши «Овоз +» ҳамаро иҷро мекунад)</string>
+    <string name="steps_help">Пас аз ОҒОЗ: + НУҚТА ламс илова мекунад, + ТАСВИР кашишро сабт мекунад (онро бо як ангушт кашед), ↶ қадами охиринро нест мекунад. То 10 қадам; як пахши «Овоз +» онҳоро бо тартиб иҷро мекунад. Ҳар ламсро аз 1 мс то 5 с нигоҳ доштан мумкин (пахши дароз). Давомнокии пахш, танаффусҳо ва давомнокии кашишҳо дар ин ҷо муайян мешаванд; мавқеъҳо танҳо тавассути ОҒОЗ иваз мешаванд.</string>
+    <string name="default_gap_label">Танаффус байни қадамҳо (барои қадамҳои нав)</string>
+    <string name="default_path_label">Давомнокии тасвир (барои тасвирҳои нав)</string>
+    <string name="unit_ms">мс</string>
+    <string name="steps_empty">Ҳоло қадам нест. Дар доираи шинокунанда ОҒОЗ-ро пахш кунед.</string>
+    <string name="steps_locked">Барои тағйири вақт интихоби қадамҳоро анҷом диҳед (ТАЙЁР ё БЕКОР).</string>
+    <string name="steps_too_long">Хеле дароз: як иҷро бояд камтар аз 59 с бошад. Танаффусҳо ё тасвирҳоро кӯтоҳ кунед.</string>
+    <string name="steps_total">Қадамҳо: %1$d · як пахш %2$d мс давом мекунад</string>
+    <string name="step_tap">%1$d · Ламс дар %2$d, %3$d</string>
+    <string name="step_path">%1$d · Тасвир (нуқтаҳо: %2$d)</string>
+    <string name="step_duration">давомнокӣ</string>
+    <string name="step_gap">баъд танаффус</string>
+    <string name="default_hold_label">Давомнокии пахши нуқтаҳои нав (1–5000)</string>
+    <string name="step_hold">пахш</string>
+    <string name="settings_unavailable">Ин экрани танзимот дар ин дастгоҳ дастрас нест.</string>
+</resources>

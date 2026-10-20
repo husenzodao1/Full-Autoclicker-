@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Full Auto Clicker</string>
-    <string name="a11y_label">Full Auto Clicker</string>
+    <string name="app_name" translatable="false">Full Auto Clicker</string>
+    <string name="a11y_label" translatable="false">Full Auto Clicker</string>
     <string name="a11y_summary">Volume Up = one tap at your chosen spot</string>
-    <string name="a11y_description">Turns each Volume Up press into exactly one tap at the point you choose with the floating marker.\n\nVolume Up is intercepted only while the clicker is ARMED, so it does not change the volume then. Volume Down is never intercepted. In every other state both volume keys work normally.\n\nThis service does not read screen content and collects no data. It has no internet access.</string>
+    <string name="a11y_description">Turns each Volume Up press into one run of the taps and swipes you chose with the floating markers (up to 10 steps, in order).\n\nFrom START until STOP, Volume Up is intercepted: the volume does not change and the volume panel does not appear. Volume Down is never intercepted. While idle, both volume keys work normally.\n\nThis service does not read screen content and collects no data. It has no internet access.</string>
 
-    <string name="tagline">One Volume Up press = one tap at your target.</string>
+    <string name="tagline">One Volume Up press = all your taps and swipes, in order.</string>
+
+    <!-- Language picker (Android 13+). Language names are always shown in their own language. -->
+    <string name="language_label">Language</string>
+    <string name="btn_language">Language: %1$s</string>
+    <string name="language_system">System default</string>
+    <string name="language_en" translatable="false">English</string>
+    <string name="language_ru" translatable="false">Русский</string>
+    <string name="language_tg" translatable="false">Тоҷикӣ</string>
 
     <string name="card_setup">1 · Accessibility access</string>
     <string name="status_service_on">ON and running</string>
@@ -14,25 +22,88 @@
     <string name="btn_enable">Open Accessibility settings</string>
     <string name="btn_settings">Accessibility settings</string>
     <string name="btn_app_info">App info</string>
-    <string name="setup_help">Samsung: Settings → Accessibility → Installed apps → Full Auto Clicker → On.\n\nIf the switch is greyed out or says \"Restricted setting\" (Android 13+ for apps not installed from a store): open App info → ⋮ (top right) → Allow restricted settings, then try again.\n\nRecommended: Settings → Battery → Background usage limits → Never sleeping apps → add Full Auto Clicker.</string>
+    <string name="setup_help">Samsung: Settings → Accessibility → Installed apps → Full Auto Clicker → On.\n\nIf you see \"App was denied access\" or \"Controlled by Restricted Setting\" (Android 13+ does this for apps installed from a file):\n1. Tap Close.\n2. Tap App info below → ⋮ (top right) → Allow restricted settings, and confirm with your PIN or fingerprint.\n3. Come back and turn the service on again.\nThe ⋮ option only appears after you have tried once and seen that message.\n\nRecommended: Settings → Battery → Background usage limits → Never sleeping apps → add Full Auto Clicker.</string>
 
     <string name="card_control">2 · Control</string>
     <string name="mode_unavailable">Turn on accessibility access first.</string>
     <string name="mode_idle">IDLE: volume keys work normally.</string>
-    <string name="mode_selecting">SELECTING: drag the marker, then press READY.</string>
-    <string name="mode_armed">ARMED at %1$d, %2$d: each Volume Up press taps once.</string>
-    <string name="mode_paused">PAUSED: screen rotated since READY (target %1$d, %2$d). Volume Up works normally until you rotate back.</string>
+    <string name="mode_selecting">SELECTING: drag the marker, then press READY. Volume Up is blocked until STOP.</string>
+    <string name="mode_armed">ARMED: %1$d steps, %2$d ms per press. Each Volume Up press runs them once. No volume panel until STOP.</string>
+    <string name="mode_paused">PAUSED: screen rotated since READY. Volume Up does nothing until you rotate back or press START.</string>
     <string name="mode_last_stop">Last stop: %1$s</string>
     <string name="btn_show">Show floating button</string>
     <string name="btn_stop">STOP</string>
-    <string name="tap_length_label">Tap length</string>
-    <string name="tap_10">10 ms</string>
-    <string name="tap_20">20 ms</string>
-    <string name="tap_40">40 ms</string>
-    <string name="control_help">Tap the floating circle → START → drag the marker onto the spot → READY. The marker disappears and its position is kept. Each Volume Up press then taps there once; holding the key does not repeat. Volume Down always changes volume. STOP, screen off, or turning the service off disarms immediately; nothing re-arms by itself.</string>
+    <string name="control_help">Tap the floating circle → START → place the markers (+ POINT, + DRAWING) → READY. The markers disappear and their positions are kept. Each Volume Up press then runs all steps once, in order; holding the key does not repeat. From START until STOP, Volume Up never changes the volume or shows the volume panel. Volume Down always changes volume. STOP, screen off, or turning the service off disarms immediately; nothing re-arms by itself.</string>
 
-    <string name="card_test">3 · Test and latency</string>
+    <string name="card_test">4 · Test and latency</string>
     <string name="btn_reset">Reset stats</string>
+    <string name="pad_title">TEST PAD</string>
+    <string name="pad_hint">aim here, press Volume Up</string>
+    <string name="pad_desc">Test pad</string>
+    <string name="stats_none">no samples yet</string>
+    <string name="stats_line">last %1$d ms · avg %2$.1f · p95 %3$d · max %4$d (n=%5$d)</string>
+    <string name="stats_key_sent">Key → tap sent: %1$s</string>
+    <string name="stats_key_done">Key → run finished: %1$s</string>
+    <string name="stats_taps">Taps: %1$d sent · %2$d done · %3$d cancelled · %4$d failed · %5$d dropped · %6$d lost</string>
+    <string name="stats_swallowed">Held-key repeats ignored: %1$d · presses without a tap: %2$d</string>
+    <string name="pad_counts">Injected taps received: %1$d · finger touches: %2$d</string>
+    <string name="pad_latency">Key → touch delivered: %1$s</string>
+    <string name="pad_last_touch">Last touch at %1$d, %2$d</string>
+    <string name="pad_offset">" · step %1$d at %2$d, %3$d · offset %4$d, %5$d"</string>
 
+    <!-- Why the clicker last stopped -->
+    <string name="stop_from_bubble">Stopped</string>
+    <string name="stop_from_app">Stopped from the app</string>
+    <string name="stop_selection_cancelled">Selection cancelled</string>
+    <string name="stop_screen_off">Screen turned off</string>
+    <string name="stop_service_off">Accessibility service turned off</string>
+    <string name="stop_interrupted">Interrupted by the system</string>
+    <string name="stop_internal_error">Internal error</string>
+
+    <!-- Floating controls -->
+    <string name="overlay_start">START</string>
+    <string name="overlay_stop">STOP</string>
+    <string name="overlay_hide">HIDE</string>
+    <string name="overlay_cancel">CANCEL</string>
+    <string name="overlay_ready">READY</string>
+    <string name="overlay_drag_hint">Drag markers · + POINT = tap · + DRAWING = swipe</string>
+    <string name="overlay_status_idle">IDLE</string>
+    <string name="overlay_status_selecting">SELECTING target</string>
+    <string name="overlay_status_armed">ARMED · %1$d steps</string>
+    <string name="overlay_status_paused">PAUSED: rotate back</string>
+    <string name="nudge_left">Move left 1 pixel</string>
+    <string name="nudge_up">Move up 1 pixel</string>
+    <string name="nudge_down">Move down 1 pixel</string>
+    <string name="nudge_right">Move right 1 pixel</string>
+    <string name="bubble_desc_idle">Auto clicker: idle</string>
+    <string name="bubble_desc_selecting">Auto clicker: choosing target</string>
+    <string name="bubble_desc_armed">Auto clicker: armed</string>
+    <string name="bubble_desc_paused">Auto clicker: paused</string>
+    <string name="marker_desc">Tap target marker</string>
+    <string name="hint_press_ready">Choose the target and press READY first</string>
+    <string name="hint_paused">Screen rotated since READY. Rotate back, or press START to set the target again.</string>
+
+    <string name="overlay_add_point">+ POINT</string>
+    <string name="overlay_add_drawing">+ DRAWING</string>
+    <string name="overlay_undo">Remove last step</string>
+    <string name="overlay_steps">Steps %1$d/%2$d</string>
+    <string name="overlay_active">#%1$d X %2$d Y %3$d</string>
+    <string name="draw_hint">Draw the path with one finger</string>
+    <string name="marker_desc_numbered">Tap marker, step %1$d</string>
+    <string name="card_steps">3 · Steps (one Volume Up runs them all)</string>
+    <string name="steps_help">After START: + POINT adds a tap, + DRAWING records a swipe (draw it with one finger), ↶ removes the last step. Up to 10 steps, run in order by one Volume Up press. Each tap can be held from 1 ms up to 5 s (long-press). Press lengths, pauses and swipe durations are set here; positions only change with START.</string>
+    <string name="default_gap_label">Pause between steps (new steps)</string>
+    <string name="default_path_label">Drawing duration (new drawings)</string>
+    <string name="unit_ms">ms</string>
+    <string name="steps_empty">No steps yet. Press START on the floating circle.</string>
+    <string name="steps_locked">Finish choosing steps (READY or CANCEL) to edit timings.</string>
+    <string name="steps_too_long">Too long: one run must stay under 59 s. Shorten pauses or drawings.</string>
+    <string name="steps_total">Steps: %1$d · one press takes %2$d ms</string>
+    <string name="step_tap">%1$d · Tap at %2$d, %3$d</string>
+    <string name="step_path">%1$d · Drawing (%2$d points)</string>
+    <string name="step_duration">duration</string>
+    <string name="step_gap">then pause</string>
+    <string name="default_hold_label">Press length of new points (1–5000)</string>
+    <string name="step_hold">press</string>
     <string name="settings_unavailable">This settings screen is not available on this device.</string>
 </resources>

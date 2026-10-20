@@ -18,23 +18,31 @@ import android.util.Log
 import android.view.Display
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import android.widget.Toast
+import com.fullautoclicker.R
 import com.fullautoclicker.core.ClickEngine
 import com.fullautoclicker.core.DispatchResult
 import com.fullautoclicker.core.DisplayGeometry
 import com.fullautoclicker.core.KeyVerdict
 import com.fullautoclicker.core.Mode
-import com.fullautoclicker.core.Target
+import com.fullautoclicker.core.PathStep
+import com.fullautoclicker.core.SequenceRules
+import com.fullautoclicker.core.Step
+import com.fullautoclicker.core.StopReason
 import com.fullautoclicker.core.TapDispatcher
 import com.fullautoclicker.core.TapOutcome
+import com.fullautoclicker.core.TapSequence
+import com.fullautoclicker.core.TapStep
 import com.fullautoclicker.overlay.BubbleView
 import com.fullautoclicker.overlay.OverlayController
 
 /**
  * Hardware-key filtering and tap injection.
  *
- * Volume key events are only routed to this service while ARMED (the key-filter flag is added on
- * READY and removed on STOP), so in every other state Android handles both volume keys itself.
- * While ARMED, only Volume Up is consumed; Volume Down is always returned to the system.
+ * Volume key events are only routed to this service from START until STOP (the key-filter flag is
+ * added when a selection starts and removed on STOP), so while IDLE Android handles both volume
+ * keys itself. In between, Volume Up is always consumed (no volume change, no volume panel) and
+ * taps only while ARMED; Volume Down is always returned to the system.
  */
 class ClickerService : AccessibilityService(), OverlayController.Actions {
 
@@ -51,13 +59,10 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
     private var screenReceiverRegistered = false
     private var delayedTap: Runnable? = null
     private var lastGeometry: DisplayGeometry? = null
+    private var lastHintAt = 0L
 
     private var cachedGesture: GestureDescription? = null
-    private var cachedGestureKey = ""
-
-    /** Tap length used for every injected tap. */
-    var tapDurationMs: Long = Prefs.DEFAULT_TAP_MS
-        private set
+    private var cachedGestureFor: TapSequence? = null
 
     val areControlsVisible: Boolean get() = connected && overlays.isBubbleShowing
 
@@ -67,9 +72,8 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
         super.onServiceConnected()
         prefs = Prefs(this)
         screen = Screen(this)
-        tapDurationMs = prefs.tapDurationMs
         // A fresh engine is always IDLE: nothing resumes after a crash, update or restart.
-        engine = ClickEngine(TapDispatcher(::dispatchTap), SystemClock::uptimeMillis)
+        engine = ClickEngine(TapDispatcher(::dispatchRun), SystemClock::uptimeMillis)
         engine.onChanged = ::onEngineChanged
         overlays = OverlayController(this, screen, prefs, this)
         connected = true
@@ -93,20 +97,20 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
     }
 
     override fun onInterrupt() {
-        if (connected) stopClicking("Interrupted by the system")
+        if (connected) stopClicking(StopReason.INTERRUPTED)
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        shutdown("Accessibility service turned off")
+        shutdown(StopReason.SERVICE_TURNED_OFF)
         return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
-        shutdown("Service destroyed")
+        shutdown(StopReason.SERVICE_TURNED_OFF)
         super.onDestroy()
     }
 
-    private fun shutdown(reason: String) {
+    private fun shutdown(reason: StopReason) {
         if (!connected) return
         connected = false // First, so the engine's change callback no longer touches the UI.
         engine.stop(reason)
@@ -136,7 +140,11 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        if (connected) onDisplayChanged()
+        if (!connected) return
+        onDisplayChanged()
+        // The app language may have changed: refresh every text we show.
+        render()
+        ClickerHub.notifyChanged()
     }
 
     private val displayListener = object : DisplayManager.DisplayListener {
@@ -159,7 +167,7 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
 
     private val screenOffReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == Intent.ACTION_SCREEN_OFF && connected) stopClicking("Screen turned off")
+            if (intent.action == Intent.ACTION_SCREEN_OFF && connected) stopClicking(StopReason.SCREEN_OFF)
         }
     }
 
@@ -171,6 +179,7 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
         val action = event.action
         if (action != KeyEvent.ACTION_DOWN && action != KeyEvent.ACTION_UP) return false
         return try {
+            val tapsBefore = engine.tapsRequested
             val verdict = engine.onVolumeUpKey(
                 down = action == KeyEvent.ACTION_DOWN,
                 repeatCount = event.repeatCount,
@@ -181,12 +190,25 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "VolUp action=$action repeat=${event.repeatCount} down=${event.downTime} -> $verdict")
             }
+            val newPress = action == KeyEvent.ACTION_DOWN && event.repeatCount == 0
+            if (newPress && verdict == KeyVerdict.CONSUME && engine.tapsRequested == tapsBefore) {
+                explainSwallowedPress()
+            }
             verdict == KeyVerdict.CONSUME
         } catch (t: Throwable) {
             Log.e(TAG, "Key handling failed; stopping", t)
-            stopClicking("Internal error")
+            stopClicking(StopReason.INTERNAL_ERROR)
             false
         }
+    }
+
+    /** A press was swallowed without tapping (no target yet, or rotated): say why, at most every 2 s. */
+    private fun explainSwallowedPress() {
+        val now = SystemClock.uptimeMillis()
+        if (now - lastHintAt < HINT_INTERVAL_MS) return
+        lastHintAt = now
+        val text = if (engine.mode == Mode.SELECTING) R.string.hint_press_ready else R.string.hint_paused
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
     }
 
     private fun setKeyFilter(on: Boolean, force: Boolean = false) {
@@ -204,41 +226,58 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
 
     // ------------------------------------------------------------------ taps
 
-    private fun dispatchTap(id: Long, x: Int, y: Int): DispatchResult {
-        if (overlays.clearPointForTap(x, y)) {
-            // One of our windows was over the target; give the window system time to drop it.
-            val run = Runnable { delayedTap = null; performDelayedTap(id, x, y) }
+    /** One Volume Up press: the whole sequence as a single gesture (one stroke per step). */
+    private fun dispatchRun(id: Long, sequence: TapSequence): DispatchResult {
+        if (overlays.clearPointsForRun(sequence.steps.map { it.start })) {
+            // One of our windows was over a touch point; give the window system time to drop it.
+            val run = Runnable { delayedTap = null; performDelayedRun(id, sequence) }
             delayedTap = run
             handler.postDelayed(run, OVERLAY_SETTLE_MS)
             return DispatchResult.ACCEPTED
         }
-        return if (performTap(id, x, y)) DispatchResult.ACCEPTED else DispatchResult.REJECTED
+        return if (performRun(id, sequence)) DispatchResult.ACCEPTED else DispatchResult.REJECTED
     }
 
-    private fun performDelayedTap(id: Long, x: Int, y: Int) {
+    private fun performDelayedRun(id: Long, sequence: TapSequence) {
         if (!engine.isInFlight(id)) return
         if (!connected || engine.mode != Mode.ARMED) {
             engine.onTapFinished(id, TapOutcome.CANCELLED)
-        } else if (!performTap(id, x, y)) {
+        } else if (!performRun(id, sequence)) {
             engine.onTapFinished(id, TapOutcome.FAILED)
         }
     }
 
-    private fun performTap(id: Long, x: Int, y: Int): Boolean {
-        val key = "$x,$y,$tapDurationMs"
-        val gesture = cachedGesture?.takeIf { cachedGestureKey == key } ?: run {
-            val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-            GestureDescription.Builder()
-                .addStroke(GestureDescription.StrokeDescription(path, 0L, tapDurationMs))
-                .build()
-                .also {
-                    cachedGesture = it
-                    cachedGestureKey = key
-                }
-        }
+    private fun performRun(id: Long, sequence: TapSequence): Boolean {
+        val gesture = cachedGesture?.takeIf { cachedGestureFor === sequence }
+            ?: buildGesture(sequence).also {
+                cachedGesture = it
+                cachedGestureFor = sequence
+            }
         val accepted = dispatchGesture(gesture, TapCallback(id), handler)
-        if (!accepted) Log.w(TAG, "dispatchGesture refused tap $id")
+        if (!accepted) Log.w(TAG, "dispatchGesture refused run $id")
         return accepted
+    }
+
+    /**
+     * Each step becomes one stroke with its own start time, so Android plays the steps in order
+     * with the exact pauses (a tap is a one-point stroke; a drawing is replayed at constant speed).
+     * Throws if Android's limits are exceeded; the engine counts that as a failed run.
+     */
+    private fun buildGesture(sequence: TapSequence): GestureDescription {
+        val builder = GestureDescription.Builder()
+        val slots = SequenceRules.timeline(sequence.steps)
+        for ((step, slot) in sequence.steps.zip(slots)) {
+            val path = Path()
+            when (step) {
+                is TapStep -> path.moveTo(step.at.x.toFloat(), step.at.y.toFloat())
+                is PathStep -> {
+                    path.moveTo(step.points[0].x.toFloat(), step.points[0].y.toFloat())
+                    for (p in step.points.drop(1)) path.lineTo(p.x.toFloat(), p.y.toFloat())
+                }
+            }
+            builder.addStroke(GestureDescription.StrokeDescription(path, slot.first, slot.second))
+        }
+        return builder.build()
     }
 
     private inner class TapCallback(private val id: Long) : GestureResultCallback() {
@@ -269,7 +308,7 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
 
     private fun onEngineChanged() {
         if (!connected) return
-        setKeyFilter(engine.mode == Mode.ARMED)
+        setKeyFilter(engine.mode != Mode.IDLE)
         if (engine.mode != Mode.ARMED) cancelDelayedTap()
         if (engine.mode != Mode.SELECTING && overlays.isSelectionShowing) overlays.hideSelection()
         render()
@@ -277,7 +316,7 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
     }
 
     private fun render() {
-        val target = engine.target
+        val sequence = engine.sequence
         val paused = engine.isPaused(screen.geometry())
         val look = when {
             engine.mode == Mode.SELECTING -> BubbleView.Look.SELECTING
@@ -286,33 +325,36 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
             else -> BubbleView.Look.IDLE
         }
         val status = when {
-            engine.mode == Mode.SELECTING -> "SELECTING target"
-            engine.mode == Mode.ARMED && paused -> "PAUSED: rotate back"
-            engine.mode == Mode.ARMED && target != null -> "ARMED  ${target.x}, ${target.y}"
-            else -> "IDLE"
+            engine.mode == Mode.SELECTING -> getString(R.string.overlay_status_selecting)
+            engine.mode == Mode.ARMED && paused -> getString(R.string.overlay_status_paused)
+            engine.mode == Mode.ARMED && sequence != null ->
+                getString(R.string.overlay_status_armed, sequence.steps.size)
+            else -> getString(R.string.overlay_status_idle)
         }
-        val armed = engine.mode == Mode.ARMED && target != null
-        overlays.render(look, status, if (armed) target!!.x else -1, if (armed) target!!.y else -1)
+        val guard = if (engine.mode == Mode.ARMED && sequence != null) sequence.steps.map { it.start } else emptyList()
+        overlays.render(look, status, guard)
     }
 
     // ------------------------------------------------------------------ overlay actions
 
     override fun onStartPressed() = startSelection()
 
-    override fun onStopPressed() = stopClicking("Stopped")
+    override fun onStopPressed() = stopClicking(StopReason.STOPPED_FROM_BUBBLE)
 
     override fun onHidePressed() {
         overlays.hideControls()
         ClickerHub.notifyChanged()
     }
 
-    override fun onReadyPressed(x: Int, y: Int) {
+    override fun onReadyPressed(steps: List<Step>) {
         if (engine.mode != Mode.SELECTING) return
+        val geometry = screen.geometry()
+        val sequence = TapSequence(SequenceRules.normalize(steps, geometry.width, geometry.height), geometry)
+        if (sequence.steps.isEmpty()) return
         overlays.hideSelection()
-        prefs.lastTargetX = x
-        prefs.lastTargetY = y
-        engine.confirmTarget(Target(x, y, screen.geometry()))
-        Log.i(TAG, "Armed at $x,$y")
+        prefs.sequence = sequence
+        engine.confirmSequence(sequence)
+        Log.i(TAG, "Armed with ${sequence.steps.size} steps: ${sequence.steps.map { it.start }}")
     }
 
     override fun onCancelPressed() = engine.cancelSelection()
@@ -322,11 +364,11 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
     fun startSelection() {
         if (!connected) return
         engine.beginSelection()
-        val t = engine.target
-        overlays.showSelection(t?.x ?: prefs.lastTargetX, t?.y ?: prefs.lastTargetY)
+        val initial = (engine.sequence ?: prefs.sequence)?.steps.orEmpty()
+        overlays.showSelection(initial, prefs.defaultHoldMs, prefs.defaultGapMs, prefs.defaultPathMs)
     }
 
-    fun stopClicking(reason: String) {
+    fun stopClicking(reason: StopReason) {
         if (!connected) return
         cancelDelayedTap()
         engine.stop(reason)
@@ -340,9 +382,17 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
         ClickerHub.notifyChanged()
     }
 
-    fun setTapDuration(ms: Long) {
-        tapDurationMs = ms
-        prefs.tapDurationMs = ms
+    /** The sequence being used, or the last saved one when nothing is armed. */
+    val currentSequence: TapSequence? get() = if (connected) engine.sequence ?: prefs.sequence else prefs.sequence
+
+    /** New timings from the settings screen; positions can only change through START. */
+    fun updateTimings(steps: List<Step>) {
+        if (!connected) return
+        val base = currentSequence ?: return
+        if (!SequenceRules.sameShape(base.steps, steps)) return
+        val updated = base.copy(steps = steps)
+        prefs.sequence = updated
+        engine.retime(steps)
         cachedGesture = null
         ClickerHub.notifyChanged()
     }
@@ -354,5 +404,8 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
 
         /** Wait after closing one of our windows that covered the target, before tapping. */
         const val OVERLAY_SETTLE_MS = 60L
+
+        /** Minimum time between two "why didn't that tap" hints. */
+        const val HINT_INTERVAL_MS = 2000L
     }
 }

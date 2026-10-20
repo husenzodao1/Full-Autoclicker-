@@ -25,6 +25,15 @@
             style="@style/Body"
             android:text="@string/tagline" />
 
+        <Button
+            android:id="@+id/btn_language"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="-8dp"
+            android:textAllCaps="false"
+            android:textColor="@color/accent" />
+
         <!-- 1 · Accessibility access -->
         <LinearLayout style="@style/Card">
 
@@ -77,7 +86,7 @@
                 android:id="@+id/mode_status"
                 style="@style/Body"
                 android:ellipsize="end"
-                android:lines="3"
+                android:lines="4"
                 android:textColor="@color/text" />
 
             <LinearLayout
@@ -104,48 +113,6 @@
                     android:textColor="#FFFFFF" />
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:text="@string/tap_length_label"
-                    android:textColor="@color/text" />
-
-                <RadioGroup
-                    android:id="@+id/tap_length"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <RadioButton
-                        android:id="@+id/tap_10"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/tap_10"
-                        android:textColor="@color/text" />
-
-                    <RadioButton
-                        android:id="@+id/tap_20"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/tap_20"
-                        android:textColor="@color/text" />
-
-                    <RadioButton
-                        android:id="@+id/tap_40"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/tap_40"
-                        android:textColor="@color/text" />
-                </RadioGroup>
-            </LinearLayout>
 
             <TextView
                 style="@style/Body"
@@ -154,7 +121,114 @@
                 android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- 3 · Test and latency -->
+        <!-- 3 · Steps: what one Volume Up press does -->
+        <LinearLayout style="@style/Card">
+
+            <TextView
+                style="@style/CardTitle"
+                android:text="@string/card_steps" />
+
+            <TextView
+                style="@style/Body"
+                android:text="@string/steps_help"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:labelFor="@id/default_hold"
+                    android:text="@string/default_hold_label"
+                    android:textColor="@color/text" />
+
+                <EditText
+                    android:id="@+id/default_hold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/unit_ms"
+                    android:textColor="@color/subtext" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:labelFor="@id/default_gap"
+                    android:text="@string/default_gap_label"
+                    android:textColor="@color/text" />
+
+                <EditText
+                    android:id="@+id/default_gap"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/unit_ms"
+                    android:textColor="@color/subtext" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:labelFor="@id/default_path"
+                    android:text="@string/default_path_label"
+                    android:textColor="@color/text" />
+
+                <EditText
+                    android:id="@+id/default_path"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/unit_ms"
+                    android:textColor="@color/subtext" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/steps_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/steps_total"
+                style="@style/Body"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text" />
+        </LinearLayout>
+
+        <!-- 4 · Test and latency -->
         <LinearLayout style="@style/Card">
 
             <TextView
