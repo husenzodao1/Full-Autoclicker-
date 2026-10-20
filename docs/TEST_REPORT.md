@@ -23,7 +23,7 @@ Each result below is **PASSED**, **FAILED**, or **NOT TESTED**. A test is marked
 | Setup help for Samsung's "Доступ для приложения запрещен" / restricted-settings screen | Text matches the user's own Samsung screenshot | — |
 | Install and service start | 1.1.0 installed on the emulator (`versionName=1.1.0`), log `Service connected` | PASSED |
 | Taps inside **WhatsApp** and **Free Fire** | Their APKs can't be downloaded here (the hosts are blocked), and Free Fire could not run on a software-emulated x86 device anyway | **NOT TESTED** |
-| Gradle/AGP build, lint, unit tests in CI | GitHub Actions on the 1.1.0 commit | see "CI" below |
+| Gradle/AGP build, lint, unit tests in CI | GitHub Actions run [39492804256](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39492804256) on commit `164aa26` | PASSED |
 
 **Please test on the phone:**
 1. START, then add 2–3 points and one drawing, then READY.
