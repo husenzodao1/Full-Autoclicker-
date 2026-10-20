@@ -217,6 +217,19 @@ class ClickEngineTest {
     }
 
     @Test
+    fun reArmingDoesNotWaitOnATapFromThePreviousSession() {
+        arm()
+        press()
+        val orphanId = dispatcher.taps.last().first
+        engine.stop("test") // its callback never arrives
+        arm()
+        press()
+        assertEquals("first press after READY taps immediately", 2, dispatcher.taps.size)
+        assertNull(engine.onTapFinished(orphanId, TapOutcome.COMPLETED))
+        assertTrue(engine.isTapInFlight)
+    }
+
+    @Test
     fun cancelledTapIsCountedAndQueueContinues() {
         arm()
         press()

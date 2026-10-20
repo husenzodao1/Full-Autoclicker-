@@ -92,6 +92,9 @@ class ClickEngine(
         if (mode != Mode.SELECTING) return false
         target = newTarget
         lastStopReason = null
+        // A new session never waits on a tap from the previous one; its late callback is ignored.
+        inFlight = null
+        queued = null
         mode = Mode.ARMED
         changed()
         return true

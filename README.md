@@ -30,7 +30,7 @@ The circle's color shows the mode: grey = IDLE, amber = SELECTING, green = ARMED
 The accessibility key filter (`FLAG_REQUEST_FILTER_KEY_EVENTS`) is **switched on only while ARMED**, and switched off on STOP. In every other state, Android doesn't send key events to the app at all, so volume works exactly as normal. While ARMED, Volume Up is consumed before it reaches the app in front, so it doesn't change the volume. The app never mutes or changes any audio stream.
 
 ### Latency
-Each tap is sent from the key callback on the main thread, using a gesture that is built in advance. The app measures latency and shows it on its main screen:
+Each tap is sent directly from the key callback on the main thread. Nothing is queued or scheduled, and the gesture is built once per target and then reused. The app measures latency and shows it on its main screen:
 - **Key → tap sent:** from the hardware key event's timestamp to the moment `dispatchGesture` is called.
 - **Key → tap finished:** until Android reports the gesture is done. This includes the tap length you chose (10/20/40 ms; 20 ms by default).
 - **Test pad:** aim at the pad and press Volume Up. The app then measures **key → touch delivered to an app window** and shows where the touch landed compared to the target.

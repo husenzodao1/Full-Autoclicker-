@@ -13,7 +13,7 @@ Each result below is **PASSED**, **FAILED**, or **NOT TESTED**. A test is marked
 | Package / version | `com.fullautoclicker` 1.0.0 (versionCode 1) |
 | SDK | minSdk 28 (Android 9), targetSdk 36 (Android 16), compileSdk 36 |
 | Size / signature | 45,837 bytes. APK Signature Scheme v3, verified with `apksigner verify`; `zipalign -c` OK |
-| SHA-256 | `9f2f55b5ca1f95ad37265a71522a7da69dc89b7f024caf39df6ff1c4c6b0d900`. This is the exact file installed for E10f and E22–E28 |
+| SHA-256 | `32bbd23dff0a2946fda2c31e48c49496127ade5d5ca0663c4568488c0c45d72e`. This is the exact file installed for F1–F4 |
 | Signing certificate | `CN=Full Auto Clicker`, SHA-256 `fdbdd299…66e8518`. This is a local key and is not in the repo (see README → Limitations) |
 | Permissions | **none** (`<uses-permission>` count = 0). The only protected component is the accessibility service (`BIND_ACCESSIBILITY_SERVICE`) |
 | Accessibility capabilities | `capabilities=40` = filter key events + perform gestures. No window-content access and no event types |
@@ -37,10 +37,11 @@ Emulator setup that the app does not need, done only to keep the slow emulator a
 - adb-install verification off
 - animations off
 
-Three builds of the same code were tested:
+Four builds of the same code were tested:
 - **Build 1** (first install): E1–E9.
 - **Build 2** (fixes D1–D5): E10–E21.
-- **Final APK** (adds D7, D8): E10f and E22–E28. E22 is the in-place update from build 2 to the final APK.
+- **Build 3** (adds D7, D8): E10f and E22–E28. E22 is the in-place update from build 2 to build 3.
+- **Final APK, build 4** (adds D9, a two-line engine change): F1–F4. These ran on a freshly wiped emulator.
 
 The [defects table](#defects-found-and-fixed-during-testing) lists what changed between builds.
 
@@ -50,9 +51,9 @@ The [defects table](#defects-found-and-fixed-during-testing) lists what changed 
 | # | Test | Result | Evidence |
 |---|---|---|---|
 | B1 | APK builds with `scripts/build-apk.sh` (aapt2 → kotlinc `-Werror` → R8 → zipalign → apksigner) | PASSED | 0 warnings, 0 errors; APK produced |
-| B2 | Standard Gradle build: `./gradlew testDebugUnitTest lintDebug assembleRelease` (AGP 8.13.0, Gradle 8.14.3) | PASSED | GitHub Actions run [39409016308](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39409016308), job "Gradle (AGP) build, unit tests, lint": success. The SDK-tools job also passed. CI result for the final commit: see "CI on final commit" below |
+| B2 | Standard Gradle build: `./gradlew testDebugUnitTest lintDebug assembleRelease` (AGP 8.13.0, Gradle 8.14.3) | PASSED | GitHub Actions on the final code commit `aa7e9b5`: run [39451355823](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39451355823). Both jobs passed: "Gradle (AGP) build, unit tests, lint" and "SDK-tools build". The first commit's run, [39409016308](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39409016308), also passed |
 | B3 | Signature, alignment, and no permissions | PASSED | `apksigner verify` v3 OK; `zipalign -c -p 4` OK; `aapt2 dump` shows no `uses-permission`; `dumpsys package` shows no requested or runtime permissions |
-| U1 | JVM unit tests of the core state machine (24 tests) | PASSED | `OK (24 tests)`. Covers: one press = one tap; long press; duplicate delivery; burst queue limit; STOP drops the queued tap; key-up consistency; rotation pause; rejected or throwing dispatch; lost-callback watchdog; cancel and re-select; latency math |
+| U1 | JVM unit tests of the core state machine (25 tests) | PASSED | `OK (25 tests)`. Covers: one press = one tap; long press; duplicate delivery; burst queue limit; STOP drops the queued tap; key-up consistency; rotation pause; rejected or throwing dispatch; lost-callback watchdog; re-arming after an orphaned tap; cancel and re-select; latency math |
 
 ### Runtime on the emulator
 | # | Test | Result | Evidence |
@@ -67,7 +68,7 @@ The [defects table](#defects-found-and-fixed-during-testing) lists what changed 
 | E8 | 1-px nudge buttons | PASSED | Window frame moved by exactly +1, +1 |
 | E9 | **READY → marker disappears, coordinates kept, ARMED** | PASSED | Marker and panel windows removed; log `Key filter on`, `Armed at 540,1346`; bubble turns green |
 | E10 | **One Volume Up press = exactly one tap at the target, with no volume change** | PASSED | Music volume 7 → 7. DOWN and UP both `CONSUME`. **0** VOLUME_UP events reached the dispatcher. Test pad: 1 injected touch at **(540, 1346), offset 0, 0** |
-| E10f | Same as E10, on the **final APK** | PASSED | Volume 7 → 7; pad touch at (540, 1346); `Tap 1 COMPLETED` |
+| E10f | Same as E10, on build 3 | PASSED | Volume 7 → 7; pad touch at (540, 1346); `Tap 1 COMPLETED` |
 | E11 | **Volume Down while ARMED changes the volume and never taps** | PASSED | Volume Down reached the dispatcher; music went down; no tap, no app log |
 | E12 | Long press (3 s hold) | PASSED | 1 tap; volume unchanged; nothing reached the dispatcher |
 | E13 | Driver-level autorepeat (5 extra key-downs with the same down time and `repeatCount=0`) | PASSED | All 6 downs `CONSUME`, **1 tap**. Shows why presses are identified by down time |
@@ -82,10 +83,18 @@ The [defects table](#defects-found-and-fixed-during-testing) lists what changed 
 | E22 | **App update installed while ARMED** | PASSED | `install -r` Success → service reconnected in IDLE. Next Volume Up handled by Android |
 | E23 | **Accessibility service turned off while ARMED** | PASSED | `Service shut down: Accessibility service turned off`; 0 overlay windows; Volume Up handled by Android; app shows "Turn on accessibility access first" |
 | E24 | **Screen off while ARMED** | PASSED | `Stop: Screen turned off`, `Key filter off` |
-| E25 | **Reboot while ARMED** | _see below_ | |
+| E25 | **Reboot while ARMED** | NOT TESTED | Tried twice; the emulator image couldn't boot a second time either time, so the app never got to run. The failure happens in Android before any app starts. First data state: `netd` couldn't load `libnetd_updatable.so` because the Tethering APEX wasn't mounted. Wiped data state: zygote died preloading the framework (`boot-framework-adservices.art` component mismatch, then `NoClassDefFoundError` in `SystemServiceRegistry`). Indirect evidence: the armed state is never written to storage (unit test `newEngineStartsIdleWithNothingArmed`), and every other way the process can start fresh came back IDLE (E20 crash, E22 update, E23/F1 service enabled again) |
 | E26 | Menu open on top of the target, then Volume Up | PASSED | Menu closed first; the tap reached the test pad at (540, 1346), not the menu |
 | E27 | Bubble dropped onto the target | PASSED | Bubble moved itself to (574, 1279), next to the target; the next tap hit the target |
 | E28 | Latency measurement shown in the app | PASSED (feature works) | Shows key → tap sent, key → tap finished, and key → touch delivered to an app (last/avg/p95/max) |
+
+### Final APK (build 4) on a freshly wiped emulator
+| # | Test | Result | Evidence |
+|---|---|---|---|
+| F1 | Install, enable service, bubble appears | PASSED | `Service connected`; bubble at the default position |
+| F2 | START → CANCEL | PASSED | Marker removed; "IDLE · Last stop: Selection cancelled" |
+| F3 | **One Volume Up = one tap at the target, no volume change** | PASSED | Music 7 → 7. DOWN and UP `CONSUME`. **0** VOLUME_UP events reached the dispatcher. Pad: 1 injected touch at (540, 1346) |
+| F4 | STOP → START (marker reopens at the saved target) → READY → first press taps immediately | PASSED | `Stop: Stopped` → `Armed at 540,1346`. First press: `CONSUME`, pad touch at (540, 1346), `Tap 2 COMPLETED`; volume unchanged |
 
 ### Latency
 | Measurement | Emulator (software CPU) | Physical A15/A16 |
@@ -93,7 +102,7 @@ The [defects table](#defects-found-and-fixed-during-testing) lists what changed 
 | Key event → gesture handed to Android | 111–621 ms (typically 160–250 ms) | NOT TESTED |
 | Key event → touch delivered to an app window | 498–1093 ms in single-press tests | NOT TESTED |
 
-The emulator was slow everywhere: system processes timed out and the input dispatcher lagged seconds behind. Its numbers say nothing about a phone. **The 40–50 ms target is NOT VERIFIED.** The app keeps its own share of this time small: no work is queued or scheduled, the gesture is built in advance, and the tap is sent from inside the key callback. Use the app's **Test pad** on the phone to measure real numbers.
+The emulator was slow everywhere: system processes timed out and the input dispatcher lagged seconds behind. Its numbers say nothing about a phone. **The 40–50 ms target is NOT VERIFIED.** The app keeps its own share of this time small: no work is queued or scheduled, the gesture is built once per target and reused, and the tap is sent from inside the key callback. Use the app's **Test pad** on the phone to measure real numbers.
 
 ## Not tested
 
@@ -108,6 +117,7 @@ The emulator was slow everywhere: system processes timed out and the input dispa
 | Android 15 / 16 (One UI 7 / 8) runtime | NOT TESTED | Built for and linted against API 36; runtime tested only on API 34 |
 | Tapping while a finger is held on the screen | NOT TESTED | Android cancels one of the two by design (see README limitations) |
 | Activity scroll position kept across rotation (fix D7) | NOT TESTED | Fix made after the rotation test; cosmetic |
+| Reboot while ARMED (E25) | NOT TESTED | The emulator image can't boot a second time (see E25). Check on the phone: arm, reboot, then press Volume Up. Expect normal volume and no tap |
 
 ### Suggested checklist on each phone
 1. Install, allow restricted settings, and turn on the service.
@@ -118,7 +128,7 @@ The emulator was slow everywhere: system processes timed out and the input dispa
 6. Press Volume Down. Expect the volume to change, with no tap.
 7. Press quickly 10 times. Expect 10 taps and 0 dropped.
 8. Note the latency lines.
-9. Rotate, then check that STOP, screen-off, and turning off the service all stop tapping.
+9. Rotate, then check that STOP, screen-off, turning off the service, and a reboot all stop tapping. After each one, Volume Up should change the volume and never tap.
 
 ## Defects found and fixed during testing
 | # | Defect (how it was found) | Fix | Re-verified |
@@ -131,6 +141,7 @@ The emulator was slow everywhere: system processes timed out and the input dispa
 | D6 | After a crash, Android could rebind with the key-filter flag still set (code review) | Flag forced off on every connect | Yes: `Key filter off` logged at each connect (E20, E22) |
 | D7 | Scroll position reset on rotation (E17 screenshot) | ScrollView given an ID | No (cosmetic) |
 | D8 | Diagnostics showed no "lost" count, and the debug log showed the latest tap's latency instead of each tap's own (E15) | Lost count shown; per-tap log | Yes ("0 lost" visible) |
+| D9 | STOP during the 60 ms "overlay closing" delay left that tap's record in flight. Re-arming within 1.5 s would then queue the first press until the watchdog cleared it (code review) | READY starts a clean session: no in-flight or queued tap, and old callbacks are ignored | Yes: unit test plus F4 |
 
 ## Android behaviors seen during testing (not app defects)
 - With no media playing, Android's AudioService shows the volume panel on the **first** Volume Up press without changing the level. So when the app passes the key through, "the key reached Android's dispatcher" is the reliable evidence, not the level.
