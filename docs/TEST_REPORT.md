@@ -30,7 +30,7 @@ Tested on a freshly wiped Android 14 emulator (1080 × 2340 @ 450 dpi, software 
 | G10 | No volume change and no volume panel while armed | PASSED | Music volume 15 → 15; 0 `KEYCODE_VOLUME_UP` events reached the input dispatcher |
 | G11 | Volume Down while armed | PASSED | Volume changed (Android handled it); no touch reached the game; no app log |
 | G12 | **STOP** from the floating menu, then Volume Up | PASSED | `Key filter off`, `Stop: STOPPED_FROM_BUBBLE`; next Volume Up changed the music volume (0 → 15) and caused no touch |
-| G13 | Gradle/AGP build, lint, unit tests in CI | PASSED | GitHub Actions run [39495074692](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39495074692) on the first 1.2.0 commit `283d836`; the final commit's run is listed in the commit history |
+| G13 | Gradle/AGP build, lint, unit tests in CI | PASSED | GitHub Actions run [39505275913](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39505275913) on the final code commit `3cece78`: both jobs ("Gradle (AGP) build, unit tests, lint" and "SDK-tools build") passed. Also run [39495074692](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39495074692) on the first 1.2.0 commit `283d836` |
 | G14 | No crash or ANR of the app during G1–G12 | PASSED | `logcat`: 0 `FATAL EXCEPTION`, 0 `ANR in com.fullautoclicker`. (Android's own System UI did stop responding several times on the slow emulator and was restarted; that is not this app) |
 
 G9 is also the **first runtime check of 1.1.0's multi-step sequences**, which the 1.1.0 report below still lists as NOT TESTED.
