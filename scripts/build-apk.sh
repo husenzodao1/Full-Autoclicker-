@@ -9,7 +9,7 @@
 # build-tools/<BUILD_TOOLS>, and kotlinc (KOTLIN_HOME or on PATH).
 #
 # Signing: set KEYSTORE, KEYSTORE_PASS, KEY_ALIAS, KEY_PASS to sign with your key. Otherwise a
-# throwaway key is generated in build/offline/ (fine for testing; updates then need the same key).
+# throwaway key is generated once at build/throwaway.jks and reused (fine for testing).
 #
 # Output: build/offline/FullAutoClicker-<versionName>.apk
 set -euo pipefail
@@ -85,11 +85,14 @@ cp "$OUT/base.apk" "$OUT/unsigned.apk"
 "$BT/zipalign" -f -p 4 "$OUT/unsigned.apk" "$OUT/aligned.apk"
 
 if [[ -z "${KEYSTORE:-}" ]]; then
-    KEYSTORE="$OUT/throwaway.jks"; KEYSTORE_PASS=android; KEY_ALIAS=key; KEY_PASS=android
-    keytool -genkeypair -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASS" -keypass "$KEY_PASS" \
-        -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
-        -dname "CN=Full Auto Clicker" >/dev/null 2>&1
-    echo "== No KEYSTORE given: signed with a throwaway key"
+    # Kept outside $OUT so repeated builds share one key and can update each other.
+    KEYSTORE="$ROOT/build/throwaway.jks"; KEYSTORE_PASS=android; KEY_ALIAS=key; KEY_PASS=android
+    if [[ ! -f "$KEYSTORE" ]]; then
+        keytool -genkeypair -keystore "$KEYSTORE" -storepass "$KEYSTORE_PASS" -keypass "$KEY_PASS" \
+            -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Full Auto Clicker" >/dev/null 2>&1
+    fi
+    echo "== No KEYSTORE given: signed with the local throwaway key $KEYSTORE"
 fi
 APK="$OUT/FullAutoClicker-$VERSION_NAME.apk"
 "$BT/apksigner" sign --v2-signing-enabled true --v3-signing-enabled true --ks "$KEYSTORE" --ks-pass "pass:$KEYSTORE_PASS" \

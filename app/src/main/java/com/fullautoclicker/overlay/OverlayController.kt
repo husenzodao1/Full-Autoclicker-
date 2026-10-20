@@ -183,6 +183,10 @@ class OverlayController(
                 }
                 MotionEvent.ACTION_UP -> {
                     if (dragging) {
+                        bubbleParams.x = startX + (e.rawX - downRawX).toInt()
+                        bubbleParams.y = startY + (e.rawY - downRawY).toInt()
+                        clampBubble(screen.geometry())
+                        updateWindow(bubble, bubbleParams)
                         keepBubbleOffTarget()
                         saveBubblePosition()
                     } else {
@@ -318,16 +322,17 @@ class OverlayController(
                     startX = markerParams.x
                     startY = markerParams.y
                 }
-                MotionEvent.ACTION_MOVE -> {
+                MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP -> {
                     // Relative drag: the finger can hold any part of the marker, so it never
-                    // has to cover the center point being aimed.
+                    // has to cover the center point being aimed. The up event carries the
+                    // final finger position too.
                     markerParams.x = startX + (e.rawX - downRawX).toInt()
                     markerParams.y = startY + (e.rawY - downRawY).toInt()
                     clampMarker(screen.geometry())
                     updateWindow(v, markerParams)
                     onMarkerMoved()
+                    if (e.actionMasked == MotionEvent.ACTION_UP) v.performClick()
                 }
-                MotionEvent.ACTION_UP -> v.performClick()
             }
             return true
         }

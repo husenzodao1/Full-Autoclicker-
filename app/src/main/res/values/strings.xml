@@ -21,7 +21,7 @@
     <string name="mode_idle">IDLE: volume keys work normally.</string>
     <string name="mode_selecting">SELECTING: drag the marker, then press READY.</string>
     <string name="mode_armed">ARMED at %1$d, %2$d: each Volume Up press taps once.</string>
-    <string name="mode_paused">PAUSED: the screen rotated or resized since READY (target %1$d, %2$d). Volume Up works normally until you rotate back or set a new target.</string>
+    <string name="mode_paused">PAUSED: screen rotated since READY (target %1$d, %2$d). Volume Up works normally until you rotate back.</string>
     <string name="mode_last_stop">Last stop: %1$s</string>
     <string name="btn_show">Show floating button</string>
     <string name="btn_stop">STOP</string>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
@@ -71,9 +72,12 @@
                 style="@style/CardTitle"
                 android:text="@string/card_control" />
 
+            <!-- Fixed height so status changes never shift the test pad below. -->
             <TextView
                 android:id="@+id/mode_status"
                 style="@style/Body"
+                android:ellipsize="end"
+                android:lines="3"
                 android:textColor="@color/text" />
 
             <LinearLayout
@@ -157,17 +161,17 @@
                 style="@style/CardTitle"
                 android:text="@string/card_test" />
 
-            <TextView
-                android:id="@+id/latency_text"
-                style="@style/Body"
-                android:fontFamily="monospace"
-                android:textSize="12sp" />
-
             <com.fullautoclicker.ui.TestPadView
                 android:id="@+id/test_pad"
                 android:layout_width="match_parent"
-                android:layout_height="160dp"
-                android:layout_marginTop="10dp" />
+                android:layout_height="160dp" />
+
+            <TextView
+                android:id="@+id/latency_text"
+                style="@style/Body"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/pad_text"

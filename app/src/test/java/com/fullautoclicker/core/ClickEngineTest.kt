@@ -210,7 +210,8 @@ class ClickEngineTest {
         assertEquals(2, dispatcher.taps.size)
         assertEquals(1, engine.tapsLost)
 
-        engine.onTapFinished(lostId, TapOutcome.COMPLETED) // late callback for the written-off tap
+        // Late callback for the written-off tap.
+        assertNull(engine.onTapFinished(lostId, TapOutcome.COMPLETED))
         assertTrue("stale callback must not clear the current tap", engine.isTapInFlight)
         assertEquals(0, engine.tapsCompleted)
     }

@@ -111,6 +111,7 @@ class MainActivity : Activity() {
 
         showButton.isEnabled = service != null && !service.areControlsVisible
         stopButton.isEnabled = service != null && service.engine.mode != Mode.IDLE
+        stopButton.alpha = if (stopButton.isEnabled) 1f else 0.4f
 
         if (service == null) {
             modeStatus.text = getString(R.string.mode_unavailable)
@@ -133,7 +134,8 @@ class MainActivity : Activity() {
 
     private fun onPadTouched(x: Int, y: Int, now: Long) {
         val tap = ClickerHub.service?.engine?.lastDispatched
-        if (tap != null && tap.id != lastMatchedTapId && now - tap.keyEventTime in 0..1000) {
+        // Attribute by dispatch time: on a busy system the key itself may be older than a second.
+        if (tap != null && tap.id != lastMatchedTapId && now - tap.dispatchedAt in 0..PAD_MATCH_MS) {
             lastMatchedTapId = tap.id
             padInjected++
             padLatency.record(now - tap.keyEventTime)
@@ -157,7 +159,8 @@ class MainActivity : Activity() {
             append(engine.tapsCompleted).append(" done · ")
             append(engine.tapsCancelled).append(" cancelled · ")
             append(engine.tapsFailed).append(" failed · ")
-            append(engine.tapsDropped).append(" dropped\n")
+            append(engine.tapsDropped).append(" dropped · ")
+            append(engine.tapsLost).append(" lost\n")
             append("Held-key repeats ignored: ").append(engine.repeatsSwallowed)
             append(" · presses while paused: ").append(engine.pressesWhilePaused)
         }
@@ -216,6 +219,11 @@ class MainActivity : Activity() {
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(this, R.string.settings_unavailable, Toast.LENGTH_LONG).show()
         }
+    }
+
+    private companion object {
+        /** An injected tap reaches the pad within this long of being dispatched, even on a busy system. */
+        const val PAD_MATCH_MS = 5000L
     }
 
     private fun applyInsets(root: View) {

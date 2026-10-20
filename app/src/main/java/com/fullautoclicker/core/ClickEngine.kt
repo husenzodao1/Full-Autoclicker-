@@ -159,10 +159,13 @@ class ClickEngine(
         return KeyVerdict.CONSUME
     }
 
-    /** Called by the dispatcher when a tap it accepted has finished, one way or another. */
-    fun onTapFinished(id: Long, outcome: TapOutcome) {
+    /**
+     * Called by the dispatcher when a tap it accepted has finished, one way or another.
+     * Returns the finished tap, or null if the callback is stale (the tap was written off).
+     */
+    fun onTapFinished(id: Long, outcome: TapOutcome): TapRecord? {
         val tap = inFlight
-        if (tap == null || tap.id != id) return // Stale callback for a tap already written off.
+        if (tap == null || tap.id != id) return null
         inFlight = null
         when (outcome) {
             TapOutcome.COMPLETED -> {
@@ -176,6 +179,7 @@ class ClickEngine(
         queued = null
         if (next != null && mode == Mode.ARMED && target != null) dispatch(next)
         changed()
+        return tap
     }
 
     fun resetStats() {

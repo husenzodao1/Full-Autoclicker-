@@ -74,7 +74,7 @@ keyPassword=...
 ```
 If that file is missing, release builds are signed with the debug key so they can still be installed.
 
-> The AGP/Gradle build files were **not** run in the build environment, because Google Maven was blocked there. See the test report. The delivered APK was built with Option B from the same sources.
+> Google Maven was blocked in the environment where this was built, so the Gradle/AGP build was verified on GitHub Actions instead (`.github/workflows/android.yml` runs unit tests, lint and `assembleRelease`). The delivered APK was built with Option B from the same sources.
 
 ### Option B: SDK command-line tools only (no Android Gradle Plugin)
 This is how the delivered APK was built: aapt2 → javac → kotlinc → R8 → zipalign → apksigner.

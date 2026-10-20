@@ -248,9 +248,14 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
 
         private fun finish(outcome: TapOutcome) {
             if (!connected) return
-            engine.onTapFinished(id, outcome)
+            val tap = engine.onTapFinished(id, outcome)
             if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "Tap $id $outcome; key->sent ${engine.dispatchLatency.last} ms, key->done ${engine.completeLatency.last} ms")
+                if (tap == null) {
+                    Log.d(TAG, "Tap $id $outcome ignored: already written off as lost")
+                } else {
+                    val now = SystemClock.uptimeMillis()
+                    Log.d(TAG, "Tap $id $outcome; key->sent ${tap.dispatchedAt - tap.keyEventTime} ms, key->done ${now - tap.keyEventTime} ms")
+                }
             }
         }
     }
