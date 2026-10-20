@@ -79,7 +79,6 @@
     <string name="bubble_desc_selecting">Auto clicker: choosing target</string>
     <string name="bubble_desc_armed">Auto clicker: armed</string>
     <string name="bubble_desc_paused">Auto clicker: paused</string>
-    <string name="marker_desc">Tap target marker</string>
     <string name="hint_press_ready">Choose the target and press READY first</string>
     <string name="hint_paused">Screen rotated since READY. Rotate back, or press START to set the target again.</string>
 
@@ -91,7 +90,7 @@
     <string name="draw_hint">Draw the path with one finger</string>
     <string name="marker_desc_numbered">Tap marker, step %1$d</string>
     <string name="card_steps">3 · Steps (one Volume Up runs them all)</string>
-    <string name="steps_help">After START: + POINT adds a tap, + DRAWING records a swipe (draw it with one finger), ↶ removes the last step. Up to 10 steps, run in order by one Volume Up press. Each tap can be held from 1 ms up to 5 s (long-press). Press lengths, pauses and swipe durations are set here; positions only change with START.</string>
+    <string name="steps_help">After START: + POINT adds a tap, + DRAWING records a swipe (draw it with one finger), UNDO removes the last step. Up to 10 steps, run in order by one Volume Up press. Each tap can be held from 1 ms up to 5 s (long-press). Press lengths, pauses and swipe durations are set here or in SETTINGS on the floating circle; positions only change with START.</string>
     <string name="default_gap_label">Pause between steps (new steps)</string>
     <string name="default_path_label">Drawing duration (new drawings)</string>
     <string name="unit_ms">ms</string>

@@ -3,6 +3,7 @@ package com.fullautoclicker.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
+import android.app.LocaleManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -12,6 +13,7 @@ import android.graphics.Path
 import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.Handler
+import android.os.LocaleList
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
@@ -51,6 +53,10 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
     private lateinit var screen: Screen
     private lateinit var overlays: OverlayController
 
+    /** Resources in the app's own language; see [refreshLanguage]. */
+    private lateinit var strings: Context
+    private var stringsLocales: LocaleList? = null
+
     lateinit var engine: ClickEngine
         private set
 
@@ -75,7 +81,9 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
         // A fresh engine is always IDLE: nothing resumes after a crash, update or restart.
         engine = ClickEngine(TapDispatcher(::dispatchRun), SystemClock::uptimeMillis)
         engine.onChanged = ::onEngineChanged
-        overlays = OverlayController(this, screen, prefs, this)
+        stringsLocales = appLocales()
+        strings = localizedContext(stringsLocales!!)
+        overlays = OverlayController(this, strings, screen, prefs, this)
         connected = true
         // Force the flag off: after a crash the system may rebind with the last dynamic flags.
         setKeyFilter(false, force = true)
@@ -142,7 +150,7 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
         super.onConfigurationChanged(newConfig)
         if (!connected) return
         onDisplayChanged()
-        // The app language may have changed: refresh every text we show.
+        // The system language may have changed: refresh every text we show.
         render()
         ClickerHub.notifyChanged()
     }
@@ -208,7 +216,7 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
         if (now - lastHintAt < HINT_INTERVAL_MS) return
         lastHintAt = now
         val text = if (engine.mode == Mode.SELECTING) R.string.hint_press_ready else R.string.hint_paused
-        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, strings.getString(text), Toast.LENGTH_SHORT).show()
     }
 
     private fun setKeyFilter(on: Boolean, force: Boolean = false) {
@@ -325,11 +333,11 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
             else -> BubbleView.Look.IDLE
         }
         val status = when {
-            engine.mode == Mode.SELECTING -> getString(R.string.overlay_status_selecting)
-            engine.mode == Mode.ARMED && paused -> getString(R.string.overlay_status_paused)
+            engine.mode == Mode.SELECTING -> strings.getString(R.string.overlay_status_selecting)
+            engine.mode == Mode.ARMED && paused -> strings.getString(R.string.overlay_status_paused)
             engine.mode == Mode.ARMED && sequence != null ->
-                getString(R.string.overlay_status_armed, sequence.steps.size)
-            else -> getString(R.string.overlay_status_idle)
+                strings.getString(R.string.overlay_status_armed, sequence.steps.size)
+            else -> strings.getString(R.string.overlay_status_idle)
         }
         val guard = if (engine.mode == Mode.ARMED && sequence != null) sequence.steps.map { it.start } else emptyList()
         overlays.render(look, status, guard)
@@ -364,6 +372,32 @@ class ClickerService : AccessibilityService(), OverlayController.Actions {
     override fun isChoosingSteps(): Boolean = engine.mode == Mode.SELECTING
 
     override fun onTimingsEdited(steps: List<Step>) = updateTimings(steps)
+
+    /**
+     * Android 13+ applies the per-app language only to activities: this service keeps the system
+     * language and gets no callback when the app language changes. So the language is read again
+     * when the app or the floating menu opens, and right after it is changed in either of them.
+     */
+    override fun refreshLanguage() {
+        if (!connected) return
+        val locales = appLocales()
+        if (locales == stringsLocales) return
+        stringsLocales = locales
+        strings = localizedContext(locales)
+        overlays.setLanguage(strings)
+        render()
+    }
+
+    private fun appLocales(): LocaleList =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getSystemService(LocaleManager::class.java).applicationLocales
+        } else {
+            LocaleList.getEmptyLocaleList()
+        }
+
+    /** Only the locale is overridden, so the context still follows rotation and other changes. */
+    private fun localizedContext(locales: LocaleList): Context =
+        if (locales.isEmpty) this else createConfigurationContext(Configuration().apply { setLocales(locales) })
 
     // ------------------------------------------------------------------ API for the app UI
 

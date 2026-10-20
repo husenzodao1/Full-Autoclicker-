@@ -85,11 +85,13 @@ class Ui(private val context: Context) {
         }
         box.addView(disc, LinearLayout.LayoutParams(px(40), px(40)))
         if (label != null) {
-            box.addView(text(label, 10f, SOFT, bodyMedium).apply {
+            // Explicit WRAP_CONTENT: the default MATCH_PARENT would be squeezed to the disc's width.
+            val caption = text(label, 10f, SOFT, bodyMedium).apply {
                 gravity = Gravity.CENTER
                 maxLines = 1
                 setPadding(0, px(4), 0, 0)
-            })
+            }
+            box.addView(caption, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
         return box
     }

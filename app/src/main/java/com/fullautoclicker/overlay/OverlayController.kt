@@ -26,6 +26,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Space
 import android.widget.TextView
 import com.fullautoclicker.R
 import com.fullautoclicker.core.DisplayGeometry
@@ -50,6 +51,7 @@ import kotlin.math.abs
 @SuppressLint("ClickableViewAccessibility")
 class OverlayController(
     private val context: Context,
+    strings: Context,
     private val screen: Screen,
     private val prefs: Prefs,
     private val actions: Actions,
@@ -65,7 +67,16 @@ class OverlayController(
         fun currentSteps(): List<Step>
         fun isChoosingSteps(): Boolean
         fun onTimingsEdited(steps: List<Step>)
+
+        /** Re-reads the app language (it can also be changed in the phone's settings). */
+        fun refreshLanguage()
     }
+
+    /**
+     * Strings come from here, not from [context]: Android applies the per-app language to
+     * activities only, so the service's own resources stay in the system language.
+     */
+    private var strings: Context = strings
 
     private val wm = context.getSystemService(WindowManager::class.java)
     private val ui = Ui(context)
@@ -115,12 +126,11 @@ class OverlayController(
     private val panelAddButtons = ArrayList<View>()
     private var panelReady: View? = null
     private var panelUndo: View? = null
-    private var panelAtTop = true
     val isSelectionShowing: Boolean get() = selecting
 
     /** Where armed runs first touch the screen; the bubble and menu must stay off these points. */
     private var guarded: List<Point> = emptyList()
-    private var statusText = context.getString(R.string.overlay_status_idle)
+    private var statusText = str(R.string.overlay_status_idle)
 
     init {
         bubble.setOnTouchListener(BubbleTouch())
@@ -130,10 +140,30 @@ class OverlayController(
 
     fun render(look: BubbleView.Look, status: String, guardPoints: List<Point>) {
         bubble.look = look
+        bubble.contentDescription = str(
+            when (look) {
+                BubbleView.Look.IDLE -> R.string.bubble_desc_idle
+                BubbleView.Look.SELECTING -> R.string.bubble_desc_selecting
+                BubbleView.Look.ARMED -> R.string.bubble_desc_armed
+                BubbleView.Look.PAUSED -> R.string.bubble_desc_paused
+            },
+        )
         statusText = status
         menuStatus?.text = status
         guarded = guardPoints
         if (guarded.isNotEmpty()) keepBubbleOffTargets()
+    }
+
+    /** New app language: windows built from now on use it; open ones are refreshed. */
+    fun setLanguage(strings: Context) {
+        this.strings = strings
+        hideMenu()
+        if (settings != null) {
+            hideSettings()
+            showSettings()
+        }
+        if (panel != null) reAddPanel()
+        refreshDrafts()
     }
 
     // ---------------------------------------------------------------- bubble
@@ -256,6 +286,7 @@ class OverlayController(
 
     private fun showMenu() {
         if (isMenuShowing || !isBubbleShowing) return
+        actions.refreshLanguage()
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
@@ -296,9 +327,11 @@ class OverlayController(
         val g = screen.geometry()
         val w = root.measuredWidth
         val h = root.measuredHeight
-        val params = windowParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, "menu")
+        // Exact size: a WRAP_CONTENT window may first be measured narrower and clip the labels.
+        val params = windowParams(w, h, "menu")
         params.flags = params.flags or WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
-        params.x = (bubbleParams.x + bubbleSize / 2 - w / 2).coerceIn(0, (g.width - w).coerceAtLeast(0))
+        val margin = px(8)
+        params.x = (bubbleParams.x + bubbleSize / 2 - w / 2).coerceIn(margin, (g.width - w - margin).coerceAtLeast(margin))
         val below = bubbleParams.y + bubbleSize + px(8)
         params.y = if (below + h <= g.height) below else (bubbleParams.y - h - px(8)).coerceAtLeast(0)
 
@@ -414,7 +447,12 @@ class OverlayController(
 
     /** Renumbers markers, redraws recorded paths and updates the panel. */
     private fun refreshDrafts() {
-        drafts.forEachIndexed { i, d -> if (d is Draft.Tap) d.view.number = i + 1 }
+        drafts.forEachIndexed { i, d ->
+            if (d is Draft.Tap) {
+                d.view.number = i + 1
+                d.view.contentDescription = strings.getString(R.string.marker_desc_numbered, i + 1)
+            }
+        }
         pathsView?.paths = drafts.mapIndexedNotNull { i, d -> if (d is Draft.Path) (i + 1) to d.points else null }
         updatePanel()
     }
@@ -492,7 +530,8 @@ class OverlayController(
         tools.addView(addPoint)
         tools.addView(addDrawing)
         tools.addView(undo)
-        tools.addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
+        // Space, not View: a plain View measured "at most" would take the whole screen width.
+        tools.addView(Space(context), LinearLayout.LayoutParams(0, 1, 1f))
         for ((icon, delta, description) in listOf(
             Triple(Icon.LEFT, -1 to 0, R.string.nudge_left),
             Triple(Icon.UP, 0 to -1, R.string.nudge_up),
@@ -502,16 +541,22 @@ class OverlayController(
             tools.addView(nudgeButton(icon, delta.first, delta.second, str(description)))
         }
         root.addView(tools)
-        val buttons = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.END
-            setPadding(0, px(10), 0, 0)
+        // Landscape has width to spare but little height: keep the buttons on the tools row there.
+        val wide = screen.geometry().let { it.width > it.height }
+        val buttons = if (wide) {
+            tools.addView(Space(context), LinearLayout.LayoutParams(px(12), 1))
+            tools
+        } else {
+            LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.END
+                setPadding(0, px(10), 0, 0)
+            }.also { root.addView(it) }
         }
         buttons.addView(ui.button(str(R.string.overlay_cancel), Ui.TEXT, filled = false) { actions.onCancelPressed() })
-        buttons.addView(View(context), LinearLayout.LayoutParams(px(8), 1))
+        buttons.addView(Space(context), LinearLayout.LayoutParams(px(8), 1))
         val ready = ui.button(str(R.string.overlay_ready), Ui.MINT, filled = true) { confirmSteps() }
         buttons.addView(ready)
-        root.addView(buttons)
 
         panel = root
         panelStatus = status
@@ -546,10 +591,10 @@ class OverlayController(
 
     private fun updatePanel() {
         val active = activeTap
-        val steps = context.getString(R.string.overlay_steps, drafts.size, SequenceRules.MAX_STEPS)
+        val steps = strings.getString(R.string.overlay_steps, drafts.size, SequenceRules.MAX_STEPS)
         panelStatus?.text = if (active != null) {
             val index = drafts.indexOf(active) + 1
-            steps + "   ·   " + context.getString(
+            steps + "   ·   " + strings.getString(
                 R.string.overlay_active,
                 index,
                 active.params.x + markerSize / 2,
@@ -563,27 +608,52 @@ class OverlayController(
         panelUndo?.let { ui.setEnabled(it, drafts.isNotEmpty()) }
         panelReady?.let { ui.setEnabled(it, drafts.isNotEmpty()) }
 
-        val activeY = active?.let { it.params.y + markerSize / 2 } ?: 0
-        val wantTop = activeY > screen.geometry().height / 2
-        if (wantTop != panelAtTop) {
-            panelAtTop = wantTop
-            placePanel()
-        }
+        placePanel()
     }
 
     private fun positionPanel(params: WindowManager.LayoutParams) {
         val root = panel ?: return
-        root.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
         val g = screen.geometry()
-        params.x = ((g.width - root.measuredWidth) / 2).coerceAtLeast(0)
-        params.y = if (panelAtTop) px(40) else (g.height - root.measuredHeight - px(40)).coerceAtLeast(0)
+        root.measure(
+            View.MeasureSpec.makeMeasureSpec(g.width - px(16), View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        )
+        params.width = root.measuredWidth
+        params.height = root.measuredHeight
+        val (x, y) = panelSpot(params.width, params.height, g)
+        params.x = x
+        params.y = y
     }
 
+    /**
+     * Of six spots along the top and bottom edges, the one that covers the fewest steps.
+     * On a tie, the edge away from the active marker and then the middle win.
+     */
+    private fun panelSpot(w: Int, h: Int, g: DisplayGeometry): Pair<Int, Int> {
+        val top = px(40)
+        val bottom = (g.height - h - px(40)).coerceAtLeast(0)
+        val activeY = activeTap?.let { it.params.y + markerSize / 2 } ?: 0
+        val ys = if (activeY > g.height / 2) listOf(top, bottom) else listOf(bottom, top)
+        val xs = listOf((g.width - w) / 2, px(8), g.width - w - px(8)).map { it.coerceAtLeast(0) }
+        val points = drafts.flatMap { d ->
+            when (d) {
+                is Draft.Tap -> listOf(Point(d.params.x + markerSize / 2, d.params.y + markerSize / 2))
+                is Draft.Path -> listOf(d.points.first(), d.points.last())
+            }
+        }
+        val pad = px(24)
+        return ys.flatMap { y -> xs.map { x -> x to y } }.minBy { (x, y) ->
+            points.count { it.x in x - pad..x + w + pad && it.y in y - pad..y + h + pad }
+        }
+    }
+
+    /** Moves the panel only when its spot or size really changed (this runs on every drag step). */
     private fun placePanel() {
         val root = panel ?: return
         val params = root.layoutParams as? WindowManager.LayoutParams ?: return
+        val before = listOf(params.x, params.y, params.width, params.height)
         positionPanel(params)
-        updateWindow(root, params)
+        if (listOf(params.x, params.y, params.width, params.height) != before) updateWindow(root, params)
     }
 
     private fun confirmSteps() {
@@ -627,10 +697,7 @@ class OverlayController(
                 updateWindow(d.view, d.params)
             }
         }
-        if (selecting) {
-            placePanel()
-            updatePanel()
-        }
+        if (selecting && panel != null) reAddPanel() // Its layout depends on the orientation.
     }
 
     /**
@@ -732,7 +799,7 @@ class OverlayController(
 
     private fun px(dp: Int): Int = (dp * density + 0.5f).toInt()
 
-    private fun str(id: Int): String = context.getString(id)
+    private fun str(id: Int): String = strings.getString(id)
 
     private fun nudgeButton(icon: Icon, dx: Int, dy: Int, description: String): View {
         val button = IconView(context, icon, Ui.SOFT).apply {
@@ -740,7 +807,7 @@ class OverlayController(
             contentDescription = description
             isClickable = true
         }
-        button.layoutParams = LinearLayout.LayoutParams(px(34), px(34)).apply { setMargins(px(2), 0, px(2), 0) }
+        button.layoutParams = LinearLayout.LayoutParams(px(32), px(32)).apply { setMargins(px(1), 0, px(1), 0) }
         repeatOnHold(button) { moveActiveBy(dx, dy) }
         return button
     }
@@ -802,7 +869,7 @@ class OverlayController(
         content.addView(stepper(str(R.string.settings_drawing), prefs.defaultPathMs, SequenceRules::clampPath) { prefs.defaultPathMs = it })
 
         val steps = actions.currentSteps()
-        content.addView(ui.caption(context.getString(R.string.settings_steps, steps.size)))
+        content.addView(ui.caption(strings.getString(R.string.settings_steps, steps.size)))
         when {
             actions.isChoosingSteps() -> content.addView(note(str(R.string.steps_locked)))
             steps.isEmpty() -> content.addView(note(str(R.string.steps_empty)))
@@ -861,7 +928,7 @@ class OverlayController(
             total.text = if (SequenceRules.isTooLong(working)) {
                 str(R.string.steps_too_long)
             } else {
-                context.getString(R.string.settings_total, SequenceRules.totalDurationMs(working))
+                strings.getString(R.string.settings_total, SequenceRules.totalDurationMs(working))
             }
         }
         fun commit(index: Int, step: Step) {
@@ -872,8 +939,8 @@ class OverlayController(
         working.forEachIndexed { i, step ->
             content.addView(ui.text(
                 when (step) {
-                    is TapStep -> context.getString(R.string.step_tap, i + 1, step.at.x, step.at.y)
-                    is PathStep -> context.getString(R.string.step_path, i + 1, step.points.size)
+                    is TapStep -> strings.getString(R.string.step_tap, i + 1, step.at.x, step.at.y)
+                    is PathStep -> strings.getString(R.string.step_path, i + 1, step.points.size)
                 },
                 13f, Ui.TEXT, ui.bodyMedium,
             ).apply { setPadding(0, px(10), 0, px(2)) })
@@ -913,7 +980,7 @@ class OverlayController(
             minWidth = px(84)
         }
         fun show() {
-            shown.text = context.getString(R.string.value_ms, value)
+            shown.text = strings.getString(R.string.value_ms, value)
         }
         fun change(up: Boolean, fast: Boolean) {
             val base = if (up) value else value - 1
@@ -933,11 +1000,11 @@ class OverlayController(
         show()
         val minus = IconView(context, Icon.MINUS, Ui.TEXT).apply {
             background = ui.pill(0x14FFFFFF, 18f)
-            contentDescription = context.getString(R.string.settings_less, label)
+            contentDescription = strings.getString(R.string.settings_less, label)
         }
         val plus = IconView(context, Icon.PLUS, Ui.TEXT).apply {
             background = ui.pill(0x14FFFFFF, 18f)
-            contentDescription = context.getString(R.string.settings_more, label)
+            contentDescription = strings.getString(R.string.settings_more, label)
         }
         repeatOnHold(minus) { fast -> change(up = false, fast = fast) }
         repeatOnHold(plus) { fast -> change(up = true, fast = fast) }
@@ -965,10 +1032,8 @@ class OverlayController(
                 isClickable = true
                 setOnClickListener {
                     if (!selected) {
-                        hideSettings()
                         localeManager.applicationLocales = LocaleList.forLanguageTags(tag)
-                        // Reopen once the new language has reached our resources.
-                        handler.postDelayed({ showSettings() }, 450)
+                        actions.refreshLanguage() // Rebuilds this panel in the new language.
                     }
                 }
             }

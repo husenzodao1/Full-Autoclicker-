@@ -5,18 +5,61 @@ Each result below is **PASSED**, **FAILED**, or **NOT TESTED**. A test is marked
 > **This app has not yet been tested on a physical Samsung Galaxy A15 or A16, or on any physical phone.**
 > No device was available in the build environment. Physical volume-key behavior, real latency, and One UI-specific behavior are therefore **NOT TESTED**. See [Not tested](#not-tested). Runtime behavior was verified on an Android 14 emulator configured with the same screen geometry as the A15/A16, with volume keys injected into the kernel input layer.
 
-## Version 1.1.0 (current APK): changes and test status
+## Version 1.2.0 (current APK): changes and test status
 
 | | |
 |---|---|
-| File | `dist/FullAutoClicker-1.1.0.apk`, 86,869 bytes |
+| File | `dist/FullAutoClicker-1.2.0.apk`, 222,968 bytes (most of the growth is the two bundled fonts) |
+| SHA-256 | `ade77e83c6e1da5cad65295906ab41b62d3b6abfcdf22680f84c5c48292d01bf`. This exact file was installed for G9–G12 |
+| Package / version | `com.fullautoclicker` 1.2.0 (versionCode 3); same signing key as before, so it installs as an update |
+| Permissions | still **none** (`aapt2 dump badging`: 0 `uses-permission`) |
+
+Tested on a freshly wiped Android 14 emulator (1080 × 2340 @ 450 dpi, software CPU, see [Test environment](#test-environment)), app language set to Tajik. Volume keys were written into the kernel input layer as before. The touch-test "game" (`tools/touch-test-app`, landscape SurfaceView) logs every touch it receives with its press time and the gap since the previous touch, taken from the touch events' own timestamps.
+
+| ID | Test | Result | Evidence |
+|---|---|---|---|
+| G1 | Build: `scripts/build-apk.sh` (kotlinc `-Werror`), 38 unit tests, 103 strings in all 3 languages with matching placeholders, zipalign, v3 signature | PASSED | `OK (38 tests)`; string check: nothing missing or extra |
+| G2 | Floating menu is an icon row **ОҒОЗ · ҚАТЪ · ТАНЗИМОТ · ПИНҲОН** with the state on top | PASSED (after fixes D10, D11) | Screenshot: Tajik labels, status "ИНТИЗОРӢ" |
+| G3 | **ТАНЗИМОТ** opens a panel over the current app with: press, pause and drawing time for new steps; every saved step with its own timings; total time of one press; language chips | PASSED | Screenshot with the 5 saved steps; total shown "Як пахш = 926 мс" (= 920 ms of the example + 6 ms, see G4) |
+| G4 | − / + steppers change values and save them at once | PASSED | Two taps on + for "new steps → Пахш": 20 → 22 ms; holding + on step 1: 20 → 26 ms. The prefs file showed `default_hold_ms=22` and the step stored as `T,600,300,26,40` right away, and the app screen showed 22 and 26 |
+| G5 | Language chip **RU** in the floating panel, then **TJ** | PASSED (after fix D12) | Panel rebuilt at once in Russian ("Настройки", "Новые шаги", "Нажатие"); `cmd locale get-app-locales` → `[ru]`, then `[tg]` |
+| G6 | START over the landscape game: numbered tap markers, drawn paths with arrows, compact one-row panel | PASSED (after fixes D13, D14) | Screenshot: panel 1558 × 379 px at the top right, covering one marker instead of two |
+| G7 | START → **CANCEL** in portrait | PASSED | Panel removed; `Key filter off` |
+| G8 | Portrait app screen: dark design, Exo 2 titles, Onest text, Tajik letters (ҳ, қ, ӣ, ӯ, ҷ, ғ) | PASSED (after fix D15) | Screenshots of all cards |
+| G9 | **One Volume Up press runs the whole 5-step example once, in order** (X →40 ms→ X → swipe 0.5 s → swipe 0.2 s → X) | **PASSED** | Game log, from the touch timestamps: tap (600,300) held 26 ms → gap 40 ms → tap (900,300) held 20 ms → gap 40 ms → swipe (500,700)→(1400,700) held 500 ms, 40 moves → gap 40 ms → swipe (1400,900)→(600,900) held 200 ms, 15 moves → gap 40 ms → tap (1919,670) held 20 ms on the FIRE button. Exactly 5 touches; key down and up both `CONSUME` |
+| G10 | No volume change and no volume panel while armed | PASSED | Music volume 15 → 15; 0 `KEYCODE_VOLUME_UP` events reached the input dispatcher |
+| G11 | Volume Down while armed | PASSED | Volume changed (Android handled it); no touch reached the game; no app log |
+| G12 | **STOP** from the floating menu, then Volume Up | PASSED | `Key filter off`, `Stop: STOPPED_FROM_BUBBLE`; next Volume Up changed the music volume (0 → 15) and caused no touch |
+| G13 | Gradle/AGP build, lint, unit tests in CI | PASSED | GitHub Actions run [39495074692](https://github.com/husenzodao1/Full-Autoclicker-/actions/runs/39495074692) on the first 1.2.0 commit `283d836`; the final commit's run is listed in the commit history |
+| G14 | No crash or ANR of the app during G1–G12 | PASSED | `logcat`: 0 `FATAL EXCEPTION`, 0 `ANR in com.fullautoclicker`. (Android's own System UI did stop responding several times on the slow emulator and was restarted; that is not this app) |
+
+G9 is also the **first runtime check of 1.1.0's multi-step sequences**, which the 1.1.0 report below still lists as NOT TESTED.
+
+**Still NOT TESTED:** a physical Samsung Galaxy A15/A16; Free Fire and WhatsApp (they can't be downloaded here); real latency (the emulator took 165 ms from key to gesture sent, which says nothing about a phone); holding a stepper button long enough to reach the 10× speed on a real phone (the emulator was too slow to repeat many times).
+
+### Defects found and fixed while testing 1.2.0
+
+| ID | Defect | Fix |
+|---|---|---|
+| D10 | **The floating controls ignored the language chosen in the app** (Android 13+ per-app language). Android gives that language only to the app's screens (activities); the service process kept `[en_US]` (`dumpsys activity processes`), so the circle showed English while the app was Tajik. This was already wrong in 1.1.0 | The service reads the app language with `LocaleManager` and takes its strings from a context with that locale. It re-reads it when the menu or the app opens, and right after a change in either |
+| D11 | Labels under the menu icons were cut ("ТАНЗИ…"): a `LinearLayout` gives a child without layout params `MATCH_PARENT`, which squeezed the label to the icon's width | Labels added with `WRAP_CONTENT`; the menu window gets its exact measured size |
+| D12 | Changing the language from the floating panel waited for a configuration change that never comes to the service (same cause as D10) | The chip tells the service directly; the panel is rebuilt in the new language at once |
+| D13 | Choosing panel was as wide as the whole landscape screen: a plain `View` used as a spacer takes all the room it is offered | Spacers are `Space` views; the panel is measured "at most screen width" and given that exact size |
+| D14 | The choosing panel covered two of the five steps in landscape | The panel tries six spots (top/bottom × left/middle/right) and takes the one covering the fewest steps; in landscape the CANCEL/READY buttons share the tools row, so the panel is about 30 % lower |
+| D15 | On the app screen, "Кушодани имкониятҳои махсус" wrapped into three lines and was cut by its button | Setup and control buttons are stacked full width |
+
+## Version 1.1.0: changes and test status
+
+| | |
+|---|---|
+| File | `dist/FullAutoClicker-1.1.0.apk`, 86,869 bytes (replaced by 1.2.0) |
 | SHA-256 | `82b40444054c2136d4278d28097e5cdf3dbc36ae018692778bb9cb6287483723` |
 | Package / version | `com.fullautoclicker` 1.1.0 (versionCode 2); same signing key as 1.0.0, so it installs as an update |
 | Permissions | still **none** |
 
 | Change in 1.1.0 | How it was checked | Result |
 |---|---|---|
-| **Russian and Tajik** interface (English default), plus an in-app language picker (Android 13+) | All 90 strings exist in all three languages with the same placeholders (checked by script); the APK contains `ru` and `tg` resources | Build and resources: PASSED. Seeing the translated screens on a phone or emulator: **NOT TESTED** |
+| **Russian and Tajik** interface (English default), plus an in-app language picker (Android 13+) | All 90 strings exist in all three languages with the same placeholders (checked by script); the APK contains `ru` and `tg` resources | Build and resources: PASSED. Seeing the translated screens: NOT TESTED in 1.1.0. Testing 1.2.0 then showed that the floating controls stayed in the system language when the language was picked in the app (D10, fixed in 1.2.0) |
 | **Sequences:** up to 10 steps (tap points and drawn swipes); one Volume Up press runs all of them in order | Unit tests: timeline of the example X →40 ms→ X → swipe 0.5 s → swipe 0.2 s → X (starts 0 / 60 / 120 / 660 / 900 ms, run 920 ms); limits (10 steps, pauses 10 ms–10 s, swipes 20 ms–10 s, run under 59 s); path thinning; save/load codec; one press = one run; queue and watchdog with long runs; retiming while armed | Unit: PASSED (38 tests). **Runtime NOT TESTED**: I couldn't confirm on a running system that Android plays the multi-stroke gesture as separate taps and swipes, because the test emulator kept crashing (system_server restarts) |
 | **Press length per tap** from 1 ms to 5 s (long-press), typed in by hand; replaces the 10/20/40 ms choice | Unit tests (range and timeline) | Unit: PASSED. Runtime: **NOT TESTED** |
 | **Volume Up blocked from START to STOP**, also while choosing steps and while paused by rotation (no volume panel, no volume change); a short hint explains why nothing was tapped | Unit tests (choosing, paused, after STOP) | Unit: PASSED. The ARMED case was PASSED on the emulator in 1.0.0 (E10/E12/E14); the new choosing/paused cases: runtime **NOT TESTED** |
@@ -32,7 +75,7 @@ Each result below is **PASSED**, **FAILED**, or **NOT TESTED**. A test is marked
 
 ## Version 1.0.0 results (below)
 
-Everything from here on was tested on 1.0.0. It is kept as history. 1.1.0 keeps the same key handling and safety design.
+Everything from here on was tested on 1.0.0. It is kept as history. 1.1.0 and 1.2.0 keep the same key handling and safety design.
 
 | | |
 |---|---|

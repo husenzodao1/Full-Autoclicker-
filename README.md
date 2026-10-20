@@ -3,7 +3,7 @@
 A native Kotlin Android app for the Samsung Galaxy A15 and A16. You place up to **10 steps** on the screen: tap points (with any press length from 1 ms to 5 s) and drawn swipes. From then on, **each physical Volume Up press runs all the steps once, in order**.
 
 - **APK:** [`dist/FullAutoClicker-1.2.0.apk`](dist/FullAutoClicker-1.2.0.apk). It is one APK for both phones (minSdk 28, targetSdk 36, about 220 KB, most of it the two fonts).
-- **Languages:** English, Русский, Тоҷикӣ. The app follows the phone's language. On Android 13+ the **Language** button at the top of the app, or the language chips in the circle's **Settings**, switch it directly. This is useful for Tajik, which Samsung doesn't offer as a system language.
+- **Languages:** English, Русский, Тоҷикӣ. The app follows the phone's language. On Android 13+ the **Language** button at the top of the app, or the language chips in the circle's **Settings**, switch it directly, for the app and the floating controls together. This is useful for Tajik, which Samsung doesn't offer as a system language.
 - **Design:** one dark look for the app and the floating controls. Text is set in [Onest](https://github.com/simpals/onest) and titles, buttons and numbers in [Exo 2](https://github.com/googlefonts/Exo-2.0); both are SIL Open Font License fonts, bundled in the APK (licenses in `app/src/main/assets/licenses/`), so nothing is downloaded.
 - **Test report:** [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md). It shows what was tested and how, and what has **not** been tested yet.
 
@@ -121,4 +121,5 @@ These come from Android itself. The app does not work around them.
 - **Overlaps:** if the open menu, the Settings panel or the floating circle is on top of a target when you press Volume Up, the app closes or moves it first, then taps about 60 ms later. Otherwise the tap would hit the app's own window.
 - **Samsung battery management:** if One UI puts the app to sleep or turns accessibility off (this can happen after updates), the app is simply IDLE. Turn it on again in Settings. It never resumes tapping by itself.
 - **Signing key:** the delivered APK is signed with a key that is not in this repo. If you build it yourself with a different key, uninstall the old app first. Android only installs an update over an APK signed with the same key.
+- **Language changed in the phone's Settings** (Settings → General management → App languages): the floating controls pick it up the next time you open the circle's menu or the app, because Android tells only the app's screens about it right away.
 - **Games and anti-cheat:** injected touches reach apps as normal touchscreen events, the same way they reach any app. But a game may detect accessibility automation, or forbid it in its terms; for an online game such as Free Fire that can mean an account ban. Free Fire and WhatsApp could not be installed in the test environment, so they were not tested.

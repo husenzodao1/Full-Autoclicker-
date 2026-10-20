@@ -8,14 +8,13 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.view.MotionEvent
 import android.view.View
-import com.fullautoclicker.R
 import com.fullautoclicker.core.Point
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-/** The small floating circle. Its color and glyph show the current mode. */
+/** The small floating circle. Its color and glyph show the current mode; the owner sets its description. */
 @SuppressLint("ViewConstructor")
 class BubbleView(context: Context) : View(context) {
     enum class Look { IDLE, SELECTING, ARMED, PAUSED }
@@ -24,7 +23,6 @@ class BubbleView(context: Context) : View(context) {
         set(value) {
             if (field == value) return
             field = value
-            contentDescription = describe(value)
             invalidate()
         }
 
@@ -39,19 +37,6 @@ class BubbleView(context: Context) : View(context) {
         strokeWidth = 2.2f * density
         strokeCap = Paint.Cap.ROUND
     }
-
-    init {
-        contentDescription = describe(Look.IDLE)
-    }
-
-    private fun describe(look: Look): String = context.getString(
-        when (look) {
-            Look.IDLE -> R.string.bubble_desc_idle
-            Look.SELECTING -> R.string.bubble_desc_selecting
-            Look.ARMED -> R.string.bubble_desc_armed
-            Look.PAUSED -> R.string.bubble_desc_paused
-        },
-    )
 
     override fun onDraw(canvas: Canvas) {
         val cx = width / 2f
@@ -129,13 +114,8 @@ class MarkerView(context: Context) : View(context) {
         set(value) {
             if (field == value) return
             field = value
-            contentDescription = context.getString(R.string.marker_desc_numbered, value)
             invalidate()
         }
-
-    init {
-        contentDescription = context.getString(R.string.marker_desc)
-    }
 
     override fun onDraw(canvas: Canvas) {
         val cx = width / 2f

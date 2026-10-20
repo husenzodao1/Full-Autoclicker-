@@ -136,8 +136,9 @@ class MainActivity : Activity() {
                 .setSingleChoiceItems(names, selected) { dialog, which ->
                     dialog.dismiss()
                     if (which != selected) {
-                        // The system recreates this activity; the service picks it up via onConfigurationChanged.
+                        // The system recreates this activity; the floating controls are told directly.
                         localeManager.applicationLocales = LocaleList.forLanguageTags(tags[which])
+                        ClickerHub.service?.refreshLanguage()
                     }
                 }
                 .show()
@@ -146,6 +147,8 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        // The language may have been changed in the phone's settings meanwhile.
+        ClickerHub.service?.refreshLanguage()
         ClickerHub.addListener(hubListener)
         refresh()
     }
